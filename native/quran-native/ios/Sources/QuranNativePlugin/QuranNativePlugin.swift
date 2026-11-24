@@ -15,7 +15,7 @@ public class QuranNativePlugin: CAPPlugin, CAPBridgedPlugin {
         "audioPlay", "audioStop", "audioToggle", "audioSetSpeed", "audioSleep", "audioState",
         "speechAvailable", "speechStart", "speechStop",
         "offlineStatus", "offlineDownload", "offlineCancel", "offlineClear", "cachePage", "cachedPages",
-        "saveBackup", "autoBackup", "autoBackupInfo", "share", "openURL",
+        "saveBackup", "autoBackup", "autoBackupInfo", "share", "openURL", "debugLog",
     ].map { CAPPluginMethod(name: $0, returnType: CAPPluginReturnPromise) }
 
     private var observers: [NSObjectProtocol] = []
@@ -84,9 +84,15 @@ public class QuranNativePlugin: CAPPlugin, CAPBridgedPlugin {
         call.resolve()
     }
 
+    @objc func debugLog(_ call: CAPPluginCall) {
+        NSLog("QuranDBG js: %@", call.getString("msg") ?? "")
+        call.resolve()
+    }
+
     @objc func getPendingShortcut(_ call: CAPPluginCall) {
         let d = UserDefaults.standard
         let v = d.string(forKey: "pending_shortcut") ?? ""
+        NSLog("QuranDBG getPendingShortcut -> '%@'", v)
         if !v.isEmpty { d.removeObject(forKey: "pending_shortcut") }
         call.resolve(["value": v])
     }

@@ -98,6 +98,8 @@
   });
   QN.addListener('pageCached', (d) => { (IOS.cachedPages[d.edition] = IOS.cachedPages[d.edition] || new Set()).add(d.num); });
 
+  function dbg(msg) { try { QN.debugLog({ msg: String(msg) }); } catch (e) {} }
+  window.addEventListener('error', (e) => dbg('JS error: ' + e.message + ' @' + e.lineno));
   function whenLoaded(fn) {
     if (document.readyState === 'complete') fn(); else window.addEventListener('load', fn, { once: true });
   }
@@ -107,8 +109,14 @@
       if (IOS.pendingDone) whenLoaded(() => { if (typeof window.onNativeResume === 'function') window.onNativeResume(); });
     }).catch(() => {});
     QN.getPendingShortcut().then((r) => {
-      if (r && r.value) whenLoaded(() => setTimeout(() => { if (typeof window.openFromShortcut === 'function') window.openFromShortcut(r.value); }, 300));
-    }).catch(() => {});
+      dbg('pendingShortcut=' + JSON.stringify(r) + ' ready=' + document.readyState);
+      if (r && r.value) whenLoaded(() => setTimeout(() => {
+        dbg('openFromShortcut type=' + typeof window.openFromShortcut);
+        try { if (typeof window.openFromShortcut === 'function') window.openFromShortcut(r.value); }
+        catch (e) { dbg('openFromShortcut error ' + e); }
+        setTimeout(() => dbg('mushaf hidden=' + document.getElementById('mushafModal').classList.contains('hidden')), 3000);
+      }, 300));
+    }).catch((e) => dbg('getPendingShortcut failed ' + e));
     QN.audioState().then((s) => {
       if (s && s.active) whenLoaded(() => { if (typeof window.onNativeAudio === 'function') window.onNativeAudio(s); });
     }).catch(() => {});
