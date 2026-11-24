@@ -1,6 +1,6 @@
 {
   "name": "ashal-nidam-hifz-quran-ios",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "أسهل نظام لحفظ القرآن — iOS",
   "scripts": {
     "sync": "./sync-web.sh && npx cap sync ios"

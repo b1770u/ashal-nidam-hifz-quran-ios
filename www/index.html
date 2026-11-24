@@ -240,19 +240,32 @@
     .text-page { position: absolute; inset: 0; display: flex; flex-direction: column; }
     .text-page .tp-body { flex: 1; overflow: hidden; padding: 1.2% 1.5% 0; font-family: 'Amiri Quran', 'Amiri', serif; line-height: 1.82;
       text-align: justify; text-align-last: center; direction: rtl; color: #1d1d1b; word-spacing: 0.02em; }
-    html.dark .text-page .tp-body, .mushaf-theme-dark .text-page .tp-body { color: #E8F0ED; }
+    .mushaf-theme-dark .text-page .tp-body { color: #E8F0ED; }
     .text-page .tp-surah { display: block; text-align: center; font-family: 'Amiri', serif; font-weight: 700; font-size: 1.12em; margin: 0.15em 0 0.05em; }
     .text-page .tp-basmala { display: block; text-align: center; margin-bottom: 0.05em; }
     .text-page .tp-num { font-family: 'Amiri Quran', 'Amiri', serif; white-space: nowrap; margin: 0 0.1em; }
     /* Tafsir */
     .tafsir-page { direction: rtl; font-family: 'Tajawal', sans-serif; }
     .tafsir-page .tf-head { text-align: center; font-weight: 800; font-size: 0.85em; color: var(--emerald); padding: 0.4em 0 0.6em; }
-    html.dark .tafsir-page .tf-head, .mushaf-theme-dark .tafsir-page .tf-head { color: #9FD9C5; }
+    .mushaf-theme-dark .tafsir-page .tf-head { color: #9FD9C5; }
     .tafsir-page .tf-surah { text-align: center; font-family: 'Amiri', serif; font-weight: 700; font-size: 1.15em; margin: 0.6em 0 0.4em; padding: 0.15em 0;
       border-top: 1px solid var(--border-soft); border-bottom: 1px solid var(--border-soft); }
     .tafsir-page .tf-item { padding: 0.55em 0.2em 0.7em; border-bottom: 1px dashed var(--border-soft); }
     .tafsir-page .tf-ayah { font-family: 'Amiri Quran', 'Amiri', serif; font-size: 1.28em; line-height: 1.9; text-align: justify; }
-    .tafsir-page .tf-text { margin-top: 0.35em; font-size: 0.95em; line-height: 1.95; text-align: justify; color: var(--text-main); opacity: 0.92; }
+    .tafsir-page .tf-text { margin-top: 0.35em; font-size: 0.95em; line-height: 1.95; text-align: justify; color: inherit; opacity: 0.88; }
+    /* Reading colours follow the PAPER colour (white / cream / dark), never the app's dark mode */
+    .mushaf-theme-white .text-page .tp-body, .mushaf-theme-cream .text-page .tp-body,
+    .mushaf-theme-white .tafsir-page, .mushaf-theme-cream .tafsir-page { color: #1d1d1b; }
+    .mushaf-theme-dark .tafsir-page { color: #E8F0ED; }
+    .mushaf-theme-white .tafsir-page .tf-head, .mushaf-theme-cream .tafsir-page .tf-head { color: #0F5C4A; }
+    .mushaf-theme-white .tafsir-page .tf-surah, .mushaf-theme-white .tafsir-page .tf-item,
+    .mushaf-theme-cream .tafsir-page .tf-surah, .mushaf-theme-cream .tafsir-page .tf-item { border-color: rgba(0, 0, 0, 0.12); }
+    .mushaf-theme-dark .tafsir-page .tf-surah, .mushaf-theme-dark .tafsir-page .tf-item { border-color: rgba(255, 255, 255, 0.12); }
+    .mushaf-theme-white .tafsir-page .tf-ref, .mushaf-theme-white .tafsir-page .tf-missing,
+    .mushaf-theme-cream .tafsir-page .tf-ref, .mushaf-theme-cream .tafsir-page .tf-missing { color: #6b7280; }
+    .mushaf-theme-white .book-num, .mushaf-theme-cream .book-num { color: #1d1d1b; }
+    .mushaf-theme-dark .book-num { color: #E8F0ED; }
+    .mushaf-theme-white .ayah-playing, .mushaf-theme-cream .ayah-playing { background-color: rgba(15, 92, 74, 0.16); box-shadow: 0 0 0 3px rgba(15, 92, 74, 0.16); }
     .tafsir-page .tf-ref, .tafsir-page .tf-missing { font-size: 0.85em; color: var(--text-muted); font-style: italic; }
     .tafsir-book-page { position: absolute; overflow-y: auto; overflow-x: hidden; padding: 0 2%; -webkit-overflow-scrolling: touch; }
     .leaf-face .tafsir-book-page { overflow: hidden; }
@@ -951,7 +964,7 @@
 
   <audio id="quranAudioEl" preload="none" referrerpolicy="no-referrer" playsinline></audio>
 
-  <script>window.__IOS_APP_VERSION__ = "1.0.3";</script>
+  <script>window.__IOS_APP_VERSION__ = "1.0.4";</script>
   <script src="ios-bridge.js"></script>
   <script>
     // Native Android speech recognition bridge (Android WebView has no Web Speech API)
@@ -2534,13 +2547,13 @@
     function bookPageHtml(p, g) {
       if ((state.mushafMode || 'page') === 'tafsir') {
         return `<div class="tafsir-book-page" style="left:${g.pad}px;top:${g.pad}px;width:${g.innerW}px;height:${g.innerH}px;font-size:${Math.max(12, Math.round(g.innerW / 25))}px;">${tafsirPageHtml(p)}</div>
-                <div class="book-num" style="color: var(--text-main);">${toArabicDigits(p)}</div>
+                <div class="book-num">${toArabicDigits(p)}</div>
                 <div class="book-under-shade"></div>`;
       }
       if (usesTextPages()) {
         const fs = fitTextPage(p, g.innerW, g.innerH);
         return `<div style="position:absolute;left:${g.pad}px;top:${g.pad}px;width:${g.innerW}px;height:${g.innerH}px;">${textPageHtml(p, fs)}</div>
-                <div class="book-num" style="color: var(--text-main);">${toArabicDigits(p)}</div>
+                <div class="book-num">${toArabicDigits(p)}</div>
                 <div class="book-under-shade"></div>`;
       }
       const url = getMushafPageSvgUrl(p, state.riwayah);
@@ -2548,7 +2561,7 @@
                 <div class="book-img mushaf-svg-img" style="left:0;top:0;width:100%;height:100%;background-image:url('${url}')"></div>
                 <svg class="ayah-overlay" viewBox="0 0 345 550" preserveAspectRatio="none"></svg>
               </div>
-              <div class="book-num" style="color: var(--text-main);">${toArabicDigits(p)}</div>
+              <div class="book-num">${toArabicDigits(p)}</div>
               <div class="book-under-shade"></div>`;
     }
     function decorateBookPages(g) {
