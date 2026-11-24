@@ -38,10 +38,10 @@ jobs:
             -derivedDataPath build/sim CODE_SIGNING_ALLOWED=NO build | tail -60
 
       - name: Test on iPhone simulator
-        run: ci/simulator-test.sh "iPhone 16" build/sim/Build/Products/Debug-iphonesimulator/App.app screenshots/iphone
+        run: ci/simulator-test.sh "iPhone 17 Pro" build/sim/Build/Products/Debug-iphonesimulator/App.app screenshots/iphone
 
       - name: Test on iPad simulator (landscape, book mode)
-        run: ci/simulator-test.sh "iPad Pro 13-inch (M4)" build/sim/Build/Products/Debug-iphonesimulator/App.app screenshots/ipad landscape
+        run: ci/simulator-test.sh "iPad Pro 13-inch" build/sim/Build/Products/Debug-iphonesimulator/App.app screenshots/ipad landscape
         continue-on-error: true
 
       - name: Build unsigned IPA (for Sideloadly / AltStore)

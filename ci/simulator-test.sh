@@ -8,8 +8,11 @@ mkdir -p "$OUT"
 UDID=$(xcrun simctl list devices available -j | python3 -c "
 import json,sys
 d=json.load(sys.stdin)['devices']
-c=[x['udid'] for rt,l in sorted(d.items(), reverse=True) if 'iOS' in rt for x in l if x['name']==sys.argv[1]]
-print(c[0] if c else '')" "$DEVICE")
+want=sys.argv[1]
+devs=[(rt,x) for rt,l in sorted(d.items(), reverse=True) if 'iOS' in rt for x in l]
+c=[x for rt,x in devs if x['name']==want] or [x for rt,x in devs if x['name'].startswith(want)]
+print(c[0]['udid'] if c else '')
+print(c[0]['name'] if c else '', file=sys.stderr)" "$DEVICE")
 [ -n "$UDID" ] || { echo "no simulator named $DEVICE"; xcrun simctl list devices available; exit 1; }
 xcrun simctl boot "$UDID" || true
 xcrun simctl bootstatus "$UDID" -b
