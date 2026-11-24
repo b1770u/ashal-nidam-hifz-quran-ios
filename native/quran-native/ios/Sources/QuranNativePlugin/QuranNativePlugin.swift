@@ -14,7 +14,7 @@ public class QuranNativePlugin: CAPPlugin, CAPBridgedPlugin {
         "scheduleReminders", "setWird", "setWirdStatus", "consumePendingDone", "getPendingShortcut",
         "audioPlay", "audioStop", "audioToggle", "audioSetSpeed", "audioSleep", "audioState",
         "speechAvailable", "speechStart", "speechStop",
-        "offlineStatus", "offlineDownload", "offlineCancel", "offlineClear", "cachePage", "cachedPages",
+        "offlineStatus", "tafsirGet", "offlineDownload", "offlineCancel", "offlineClear", "cachePage", "cachedPages",
         "saveBackup", "autoBackup", "autoBackupInfo", "share", "openURL", "debugLog",
     ].map { CAPPluginMethod(name: $0, returnType: CAPPluginReturnPromise) }
 
@@ -170,6 +170,11 @@ public class QuranNativePlugin: CAPPlugin, CAPBridgedPlugin {
 
     @objc func offlineStatus(_ call: CAPPluginCall) {
         DispatchQueue.global(qos: .utility).async { call.resolve(OfflineStore.shared.status()) }
+    }
+
+    @objc func tafsirGet(_ call: CAPPluginCall) {
+        let s = call.getInt("surah") ?? 1
+        DispatchQueue.global(qos: .userInitiated).async { call.resolve(["json": OfflineStore.shared.tafsirJSON(s)]) }
     }
 
     @objc func offlineDownload(_ call: CAPPluginCall) {

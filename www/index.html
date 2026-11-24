@@ -236,19 +236,26 @@
     .mushaf-theme-dark .ayah-overlay path.ayah-playing { fill: rgba(52, 211, 153, 0.22); }
     #mushafContent { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
     /* Warsh "easy reading" pages (eastern dotting), laid out like a printed mushaf page */
-    .text-page { position: absolute; inset: 0; display: flex; flex-direction: column; border-radius: 6px;
-      border: 2px solid color-mix(in srgb, var(--gold) 75%, transparent);
-      box-shadow: inset 0 0 0 4px var(--book-paper, transparent), inset 0 0 0 5px color-mix(in srgb, var(--emerald) 45%, transparent); }
-    .text-page .tp-body { flex: 1; overflow: hidden; padding: 7% 6% 2%; font-family: 'Amiri', serif; line-height: 1.95;
-      text-align: justify; text-align-last: center; direction: rtl; color: inherit; }
-    .text-page .tp-foot { text-align: center; font-size: 11px; font-weight: 700; opacity: 0.55; padding-bottom: 4%; font-family: 'Tajawal', sans-serif; }
-    .text-page .tp-surah { display: block; text-align: center; font-weight: 700; margin: 0.15em 0 0.2em; padding: 0.1em 0;
-      border: 1.5px solid color-mix(in srgb, var(--gold) 70%, transparent); border-radius: 0.6em;
-      background: color-mix(in srgb, var(--emerald) 10%, transparent); color: var(--emerald); }
-    html.dark .text-page .tp-surah, .mushaf-theme-dark .text-page .tp-surah { color: #E6F4F0; }
-    .text-page .tp-basmala { display: block; text-align: center; color: var(--emerald); margin-bottom: 0.1em; }
-    html.dark .text-page .tp-basmala, .mushaf-theme-dark .text-page .tp-basmala { color: #9FD9C5; }
-    .text-page .tp-num { color: var(--gold); font-size: 0.8em; white-space: nowrap; margin: 0 0.12em; }
+    /* Warsh text page: same frame and proportions as the printed Hafs page, only the text differs */
+    .text-page { position: absolute; inset: 0; display: flex; flex-direction: column; }
+    .text-page .tp-body { flex: 1; overflow: hidden; padding: 1.2% 1.5% 0; font-family: 'Amiri Quran', 'Amiri', serif; line-height: 1.82;
+      text-align: justify; text-align-last: center; direction: rtl; color: #1d1d1b; word-spacing: 0.02em; }
+    html.dark .text-page .tp-body, .mushaf-theme-dark .text-page .tp-body { color: #E8F0ED; }
+    .text-page .tp-surah { display: block; text-align: center; font-family: 'Amiri', serif; font-weight: 700; font-size: 1.12em; margin: 0.15em 0 0.05em; }
+    .text-page .tp-basmala { display: block; text-align: center; margin-bottom: 0.05em; }
+    .text-page .tp-num { font-family: 'Amiri Quran', 'Amiri', serif; white-space: nowrap; margin: 0 0.1em; }
+    /* Tafsir */
+    .tafsir-page { direction: rtl; font-family: 'Tajawal', sans-serif; }
+    .tafsir-page .tf-head { text-align: center; font-weight: 800; font-size: 0.85em; color: var(--emerald); padding: 0.4em 0 0.6em; }
+    html.dark .tafsir-page .tf-head, .mushaf-theme-dark .tafsir-page .tf-head { color: #9FD9C5; }
+    .tafsir-page .tf-surah { text-align: center; font-family: 'Amiri', serif; font-weight: 700; font-size: 1.15em; margin: 0.6em 0 0.4em; padding: 0.15em 0;
+      border-top: 1px solid var(--border-soft); border-bottom: 1px solid var(--border-soft); }
+    .tafsir-page .tf-item { padding: 0.55em 0.2em 0.7em; border-bottom: 1px dashed var(--border-soft); }
+    .tafsir-page .tf-ayah { font-family: 'Amiri Quran', 'Amiri', serif; font-size: 1.28em; line-height: 1.9; text-align: justify; }
+    .tafsir-page .tf-text { margin-top: 0.35em; font-size: 0.95em; line-height: 1.95; text-align: justify; color: var(--text-main); opacity: 0.92; }
+    .tafsir-page .tf-ref, .tafsir-page .tf-missing { font-size: 0.85em; color: var(--text-muted); font-style: italic; }
+    .tafsir-book-page { position: absolute; overflow-y: auto; overflow-x: hidden; padding: 0 2%; -webkit-overflow-scrolling: touch; }
+    .leaf-face .tafsir-book-page { overflow: hidden; }
 
     @keyframes slideDown {
       from { opacity: 0; transform: translate(-50%, -18px); }
@@ -516,7 +523,9 @@
           <span class="block w-10 h-1 rounded-full" style="background-color: var(--text-muted); opacity: 0.45;"></span>
           <span id="mushafHandleText" class="text-[11px] font-bold truncate max-w-full" style="color: var(--text-muted);"></span>
         </button>
-        <span class="w-7 shrink-0 flex items-center justify-center" style="color: var(--text-muted);"><i data-lucide="chevron-down" class="w-4 h-4"></i></span>
+        <button id="mushafHandleTafsirBtn" type="button" class="h-7 px-2 rounded-lg soft-surface flex items-center gap-1 shrink-0 text-[11px] font-bold" aria-label="تفسير الصفحة">
+          <i data-lucide="book-open-text" class="w-3.5 h-3.5"></i><span id="mushafHandleTafsirLabel">تفسير</span>
+        </button>
       </div>
 
       <div id="mushafTopPanel" class="mushaf-panel top">
@@ -548,6 +557,7 @@
           <div class="flex items-center gap-0.5 p-0.5 rounded-xl card-surface">
             <button id="mushafModePageBtn" type="button" class="px-2.5 py-1 rounded-lg font-bold transition">المصحف</button>
             <button id="mushafModeTextBtn" type="button" class="px-2.5 py-1 rounded-lg font-bold transition">نص</button>
+            <button id="mushafModeTafsirBtn" type="button" class="px-2.5 py-1 rounded-lg font-bold transition">تفسير</button>
           </div>
         </div>
 
@@ -839,6 +849,10 @@
         <button id="offlinePagesBtn" type="button" class="w-full py-2 px-3 rounded-xl text-xs font-bold soft-surface flex items-center justify-center gap-1.5">
           <i data-lucide="book-down" class="w-3.5 h-3.5"></i>
           <span id="offlinePagesLabel">تحميل صفحات المصحف</span>
+        </button>
+        <button id="offlineTafsirBtn" type="button" class="w-full py-2 px-3 rounded-xl text-xs font-bold soft-surface flex items-center justify-center gap-1.5">
+          <i data-lucide="book-open-text" class="w-3.5 h-3.5"></i>
+          <span>تحميل تفسير السعدي (~6 ميغا)</span>
         </button>
         <div id="offlineProgressWrap" class="hidden space-y-1">
           <div class="h-2 rounded-full overflow-hidden" style="background-color: var(--bg-soft);">
@@ -2060,6 +2074,7 @@
       }
 
       const targets = resolveReadingTargets(surahLabel, type, detail);
+      if (state.mushafMode === 'tafsir') state.mushafMode = state.prevMushafMode && state.prevMushafMode !== 'tafsir' ? state.prevMushafMode : 'page';
       mushafContext = {
         tableId,
         dayNum,
@@ -2233,22 +2248,22 @@
         if (!v) continue;
         if (ay === 1) {
           if (lastSurah) html += '<br>';
-          html += `<span class="tp-surah">سورة ${SURAH_NAMES[su] || ''}</span>`;
+          html += `<span class="tp-surah">سُورَةُ ${SURAH_NAMES[su] || ''}</span>`;
           if (su !== 1 && su !== 9) html += '<span class="tp-basmala">بِسْمِ اِ۬للَّهِ اِ۬لرَّحْمَٰنِ اِ۬لرَّحِيمِ</span>';
         }
         lastSurah = su;
-        html += `<span data-ayah-span="${su}:${ay}">${v.text}</span><span class="tp-num">﴿${toArabicDigits(ay)}﴾</span> `;
+        html += `<span data-ayah-span="${su}:${ay}">${v.text}</span><span class="tp-num">۝${toArabicDigits(ay)}</span> `;
       }
       return html;
     }
     function textPageHtml(page, fontPx) {
-      return `<div class="text-page mushaf-page-frame" data-page="${page}">
-          <div class="tp-body" style="font-size:${fontPx}px">${textPageBody(page)}</div>
-          <div class="tp-foot">${toArabicDigits(page)}</div>
-        </div>`;
+      const centred = page <= 2 ? 'display:flex;flex-direction:column;justify-content:center;' : '';
+      return `<div class="text-page" data-page="${page}"><div class="tp-body" style="font-size:${fontPx}px;${centred}"><div>${textPageBody(page)}</div></div></div>`;
     }
     /** Largest font size that fits the page box; cached per page and size. */
     function fitTextPage(page, w, h) {
+      // Al-Fatiha and the start of Al-Baqarah (pages 1-2) use the normal size, centred, like the printed mushaf
+      if (page <= 2) return fitTextPage(3, w, h);
       const key = `${page}:${Math.round(w)}x${Math.round(h)}`;
       if (textPageFit[key]) return textPageFit[key];
       const host = document.createElement('div');
@@ -2359,6 +2374,125 @@
     })();
 
     // =========================================================================
+    // TAFSIR AL-SA'DI (downloaded surah by surah, saved on the phone)
+    // =========================================================================
+    const TAFSIR_URLS = (s) => [
+      `https://raw.githubusercontent.com/spa5k/tafsir_api/main/tafsir/ar-tafseer-al-saddi/${s}.json`,
+      `https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/ar-tafseer-al-saddi/${s}.json`
+    ];
+    const tafsirCache = {};
+    function escapeHtml(t) { return String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+    function normalizeTafsir(raw) {
+      const d = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      const items = Array.isArray(d) ? d : (d.ayahs || []);
+      const out = [];
+      items.forEach(x => { out[Number(x.ayah) - 1] = String(x.text || '').replace(/\\"/g, '"').replace(/\\n/g, ' ').replace(/\\/g, '').trim(); });
+      return out;
+    }
+    async function loadTafsir(s) {
+      if (tafsirCache[s]) return tafsirCache[s];
+      let raw = '';
+      try {
+        if (window.__IOS && window.__IOS.QN) { const r = await window.__IOS.QN.tafsirGet({ surah: s }); raw = (r && r.json) || ''; }
+        else if (window.AndroidBridge && window.AndroidBridge.getTafsir) raw = window.AndroidBridge.getTafsir(s) || '';
+      } catch (e) {}
+      if (!raw) {
+        for (const u of TAFSIR_URLS(s)) {
+          try { const r = await fetch(u); if (r.ok) { raw = await r.text(); break; } } catch (e) {}
+        }
+      }
+      if (!raw) return null;
+      try { tafsirCache[s] = normalizeTafsir(raw); } catch (e) { return null; }
+      return tafsirCache[s];
+    }
+    async function ensureTafsirForPages(pages) {
+      const surahs = new Set();
+      pages.forEach(p => pageAyahs(p).forEach(([s]) => surahs.add(s)));
+      const res = await Promise.all([...surahs].map(loadTafsir));
+      return res.every(Boolean);
+    }
+    /** Al-Sa'di sometimes explains several ayahs together: point to the ayah that carries the explanation. */
+    function tafsirFor(s, a) {
+      const t = tafsirCache[s];
+      if (!t) return null;
+      if (t[a - 1]) return { text: t[a - 1] };
+      for (let b = a - 1; b >= 1; b--) if (t[b - 1]) return { ref: b };
+      for (let b = a + 1; b <= t.length; b++) if (t[b - 1]) return { ref: b };
+      return { text: '' };
+    }
+    function tafsirPageHtml(page) {
+      const riw = state.riwayah === 'warsh' ? 'warsh' : 'hafs';
+      let html = `<div class="tafsir-page" data-page="${page}"><div class="tf-head">تفسير السعدي • الصفحة ${toArabicDigits(page)}</div>`;
+      let last = 0;
+      for (const [s, a] of pageAyahs(page)) {
+        if (s !== last) { html += `<div class="tf-surah">سورة ${SURAH_NAMES[s] || ''}</div>`; last = s; }
+        const v = surahVersesSync(s, riw)[a - 1];
+        const t = tafsirFor(s, a);
+        const body = !t ? '<span class="tf-missing">التفسير غير محمّل</span>'
+          : t.ref ? `<span class="tf-ref">تفسير هذه الآية مع الآية ${toArabicDigits(t.ref)}</span>` : escapeHtml(t.text);
+        html += `<div class="tf-item"><div class="tf-ayah"><span data-ayah-span="${s}:${a}">${v ? v.text : ''}</span> <span class="tp-num">۝${toArabicDigits(a)}</span></div><div class="tf-text">${body}</div></div>`;
+      }
+      return html + '</div>';
+    }
+    async function renderTafsir(contentEl) {
+      const book = isBookLayout();
+      const r = book ? spreadRight(mushafContext.currentPage) : mushafContext.currentPage;
+      const pages = book ? [r, Math.min(604, r + 1)] : [r];
+      if (book) mushafContext.currentPage = r;
+      document.getElementById('mushafPageNumBadge').textContent = book ? `ص ${r}–${r + 1}` : `ص ${r}`;
+      setMushafPills('');
+      setMushafHandle(`تفسير السعدي • ص ${book ? toArabicDigits(r) + '–' + toArabicDigits(r + 1) : toArabicDigits(r)} • ${state.riwayah === 'warsh' ? 'ورش' : 'حفص'}`);
+      contentEl.style.fontSize = '';
+      contentEl.innerHTML = `<div class="text-center py-12 text-sm font-sans" style="color: var(--text-muted);">جاري تحميل تفسير السعدي...</div>`;
+      const ok = await ensureTafsirForPages(pages);
+      if (state.mushafMode !== 'tafsir' || !mushafContext) return;
+      if (!ok) {
+        contentEl.innerHTML = `<div class="text-center py-10 px-4 font-sans space-y-3">
+            <p class="text-sm font-bold">تعذّر تحميل التفسير</p>
+            <p class="text-xs" style="color: var(--text-muted);">تحقق من اتصالك بالإنترنت، أو حمّل التفسير مسبقاً من الإعدادات ← الاستعمال بدون إنترنت.</p>
+            <button type="button" data-tafsir-back class="px-4 py-2 rounded-xl text-xs font-bold text-white" style="background-color: var(--emerald);">العودة إلى المصحف</button>
+          </div>`;
+        return;
+      }
+      if (book) { renderBook(contentEl, mushafContext.startPage, mushafContext.endPage); applyAyahHighlight(); return; }
+      contentEl.innerHTML = `<div style="font-size:${Math.round((state.mushafFontSize || 24) * 0.72)}px;">
+          <div class="flex justify-center pb-1">
+            <button type="button" data-tafsir-back class="px-3 py-1.5 rounded-xl text-xs font-bold soft-surface flex items-center gap-1.5 font-sans">
+              <i data-lucide="book-open" class="w-3.5 h-3.5"></i><span>العودة إلى المصحف</span>
+            </button>
+          </div>
+          ${tafsirPageHtml(r)}
+        </div>`;
+      contentEl.scrollTop = 0;
+      applyAyahHighlight();
+      if (window.lucide) lucide.createIcons();
+    }
+    function openTafsir() {
+      if (!mushafContext) return;
+      if (state.mushafMode !== 'tafsir') state.prevMushafMode = state.mushafMode || 'page';
+      if ((state.prevMushafMode || 'page') === 'text') {
+        // text view has no page: start from the first page of the wird
+        mushafContext.currentPage = mushafContext.startPage || mushafContext.currentPage;
+      }
+      state.mushafMode = 'tafsir';
+      hideMushafPanels();
+      renderMushafModal();
+    }
+    function closeTafsir() {
+      state.mushafMode = state.prevMushafMode && state.prevMushafMode !== 'tafsir' ? state.prevMushafMode : 'page';
+      saveState();
+      renderMushafModal();
+    }
+    async function flipBookAny(dir) {
+      if ((state.mushafMode || 'page') === 'tafsir') {
+        const r = spreadRight(mushafContext.currentPage) + 2 * dir;
+        if (r < 1 || r > 603) return;
+        await ensureTafsirForPages([r, r + 1]);
+      }
+      flipBook(dir);
+    }
+
+    // =========================================================================
     // BOOK MODE (tablet landscape): two-page spread + realistic page turn
     // =========================================================================
     const BOOK_RATIO = 550 / 345;          // mushaf page height / width
@@ -2391,9 +2525,16 @@
       return { pageW, pageH, pad, innerW, innerH };
     }
     function bookPageHtml(p, g) {
+      if ((state.mushafMode || 'page') === 'tafsir') {
+        return `<div class="tafsir-book-page" style="left:${g.pad}px;top:${g.pad}px;width:${g.innerW}px;height:${g.innerH}px;font-size:${Math.max(12, Math.round(g.innerW / 25))}px;">${tafsirPageHtml(p)}</div>
+                <div class="book-num" style="color: var(--text-main);">${toArabicDigits(p)}</div>
+                <div class="book-under-shade"></div>`;
+      }
       if (usesTextPages()) {
-        const fs = fitTextPage(p, g.pageW, g.pageH);
-        return `${textPageHtml(p, fs)}<div class="book-under-shade"></div>`;
+        const fs = fitTextPage(p, g.innerW, g.innerH);
+        return `<div style="position:absolute;left:${g.pad}px;top:${g.pad}px;width:${g.innerW}px;height:${g.innerH}px;">${textPageHtml(p, fs)}</div>
+                <div class="book-num" style="color: var(--text-main);">${toArabicDigits(p)}</div>
+                <div class="book-under-shade"></div>`;
       }
       const url = getMushafPageSvgUrl(p, state.riwayah);
       return `<div class="page-art" data-page="${p}" style="left:${g.pad}px;top:${g.pad}px;width:${g.innerW}px;height:${g.innerH}px;right:auto;bottom:auto;">
@@ -2442,7 +2583,7 @@
       }
       setMushafPills(pills);
       const label = getTable(mushafContext.tableId).days[mushafContext.dayNum - 1][0];
-      setMushafHandle(`${SURAH_MAP[label] ? 'سورة ' + label : label} • ص ${toArabicDigits(r)}–${toArabicDigits(l)} • ${state.riwayah === 'warsh' ? 'ورش' : 'حفص'}`);
+      setMushafHandle((state.mushafMode === 'tafsir' ? 'تفسير السعدي' : (SURAH_MAP[label] ? 'سورة ' + label : label)) + ` • ص ${toArabicDigits(r)}–${toArabicDigits(l)} • ${state.riwayah === 'warsh' ? 'ورش' : 'حفص'}`);
       contentEl.innerHTML = `<div class="flex items-center justify-center" style="min-height: ${contentEl.clientHeight - 32}px;"><div id="bookWrap" class="book-wrap"></div></div>`;
       const wrap = document.getElementById('bookWrap');
       const g = computeBookGeom(contentEl);
@@ -2454,7 +2595,7 @@
           <div id="bookLeft" class="book-page left" style="width:${g.pageW}px">${bookPageHtml(l, g)}</div>
           <div id="bookRight" class="book-page right" style="width:${g.pageW}px">${bookPageHtml(r, g)}</div>
         </div>`;
-      if (!usesTextPages()) {
+      if (!usesTextPages() && (state.mushafMode || 'page') !== 'tafsir') {
         checkBookPage(r, document.getElementById('bookRight'));
         checkBookPage(l, document.getElementById('bookLeft'));
       }
@@ -2540,8 +2681,11 @@
         const frontX = fwd ? W - (k + 1) * sw - 2 : k * sw;
         const backX = fwd ? k * sw : W - (k + 1) * sw - 2;
         const img = (pg, url, x) => {
+          if ((state.mushafMode || 'page') === 'tafsir') {
+            return `<div class="tafsir-book-page" style="left:${g.pad - x}px;top:${g.pad}px;width:${g.innerW}px;height:${g.innerH}px;font-size:${Math.max(12, Math.round(g.innerW / 25))}px;">${tafsirPageHtml(pg)}</div>`;
+          }
           if (usesTextPages()) {
-            return `<div style="position:absolute;top:0;left:${-x}px;width:${W}px;height:${g.pageH}px;">${textPageHtml(pg, fitTextPage(pg, W, g.pageH))}</div>`;
+            return `<div style="position:absolute;top:${g.pad}px;left:${g.pad - x}px;width:${g.innerW}px;height:${g.innerH}px;">${textPageHtml(pg, fitTextPage(pg, g.innerW, g.innerH))}</div>`;
           }
           const sh = cachedPageShift(pg, state.riwayah) * g.innerW / 345;
           return `<div class="book-img mushaf-svg-img" style="left:${g.pad - x + sh}px;top:${g.pad}px;width:${g.innerW}px;height:${g.innerH}px;background-image:url('${url}')"></div>`;
@@ -2618,9 +2762,13 @@
       document.getElementById('mushafHafsBtn').setAttribute('style', state.riwayah === 'hafs' ? activePill : idlePill);
       document.getElementById('mushafModePageBtn').setAttribute('style', mode === 'page' ? activePill : idlePill);
       document.getElementById('mushafModeTextBtn').setAttribute('style', mode === 'text' ? activePill : idlePill);
+      document.getElementById('mushafModeTafsirBtn').setAttribute('style', mode === 'tafsir' ? activePill : idlePill);
+      const htb = document.getElementById('mushafHandleTafsirLabel');
+      if (htb) htb.textContent = mode === 'tafsir' ? 'المصحف' : 'تفسير';
 
-      document.getElementById('mushafPageControls').classList.toggle('hidden', mode !== 'page');
-      document.getElementById('mushafTextControls').classList.toggle('hidden', mode !== 'text');
+      document.getElementById('mushafPageControls').classList.toggle('hidden', mode === 'text');
+      document.getElementById('mushafTextControls').classList.toggle('hidden', mode !== 'text' && mode !== 'tafsir');
+      document.getElementById('mushafScopeBtn').classList.toggle('hidden', mode !== 'text');
 
       // Mark done button
       const key = dayKey(tableId, dayNum);
@@ -2637,6 +2785,10 @@
 
       const contentEl = document.getElementById('mushafContent');
 
+      if (mode === 'tafsir') {
+        await renderTafsir(contentEl);
+        return;
+      }
       if (mode === 'page' && isBookLayout()) {
         renderBook(contentEl, startPage, endPage);
         if (window.lucide) lucide.createIcons();
@@ -2667,13 +2819,15 @@
         const imgH = Math.floor(Math.min(availH, availW * (550 / 345)));
         const imgW = Math.floor(imgH * (345 / 550));
         if (usesTextPages()) {
-          // Warsh, easy reading: the page is drawn from the bundled text (same page split)
-          const tw = imgW + 12, th = imgH + 26;
-          const fs = fitTextPage(currentPage, tw, th);
+          // Warsh, easy reading: same frame, size and page split as the Hafs page; the text is drawn from the bundled Warsh text
+          const fs = fitTextPage(currentPage, imgW, imgH);
           contentEl.innerHTML = `
             <div class="flex items-center justify-center" style="line-height: 1; min-height: ${boxH}px;">
-              <div id="mushafImgContainer" class="relative" style="width:${tw}px;height:${th}px;--book-paper:${bookPaperColor()};">
-                <div class="page-zoom">${textPageHtml(currentPage, fs)}</div>
+              <div class="mushaf-page-frame mushaf-fit-frame rounded-2xl p-1.5">
+                <div id="mushafImgContainer" class="relative overflow-hidden" style="width:${imgW}px;height:${imgH}px;">
+                  <div class="page-zoom">${textPageHtml(currentPage, fs)}</div>
+                </div>
+                <div class="text-center pt-1 text-[11px] font-bold font-sans" style="color: var(--text-muted);">${toArabicDigits(currentPage)}</div>
               </div>
             </div>`;
           applyAyahHighlight();
@@ -3313,8 +3467,8 @@
       const dy = e.changedTouches[0].clientY - touchStartY;
       if (Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx) * 0.8) return;
       // Book mode: swipe right turns forward (like lifting the left page), swipe left turns back
-      if (mushafContext && (state.mushafMode || 'page') === 'page' && isBookLayout()) {
-        flipBook(dx > 0 ? 1 : -1);
+      if (mushafContext && ['page', 'tafsir'].includes(state.mushafMode || 'page') && isBookLayout()) {
+        flipBookAny(dx > 0 ? 1 : -1);
         return;
       }
 
@@ -3328,7 +3482,7 @@
       }
 
       // Mid-screen horizontal swipe flips Mushaf pages in RTL book order
-      if (mushafContext && (state.mushafMode || 'page') === 'page') {
+      if (mushafContext && ['page', 'tafsir'].includes(state.mushafMode || 'page')) {
         if (dx > 60) {
           mushafContext.currentPage = Math.min(604, mushafContext.currentPage + 1);
           renderMushafModal();
@@ -3359,6 +3513,13 @@
       renderMushafModal();
     });
 
+    document.getElementById('mushafModeTafsirBtn').addEventListener('click', () => openTafsir());
+    document.getElementById('mushafHandleTafsirBtn').addEventListener('click', () => {
+      if (state.mushafMode === 'tafsir') closeTafsir(); else openTafsir();
+    });
+    document.getElementById('mushafContent').addEventListener('click', (e) => {
+      if (e.target.closest && e.target.closest('[data-tafsir-back]')) closeTafsir();
+    });
     document.getElementById('mushafModeTextBtn').addEventListener('click', () => {
       state.mushafMode = 'text';
       saveState();
@@ -3367,14 +3528,14 @@
 
     document.getElementById('mushafPrevPageBtn').addEventListener('click', () => {
       if (!mushafContext) return;
-      if ((state.mushafMode || 'page') === 'page' && isBookLayout()) { flipBook(-1); return; }
+      if (['page', 'tafsir'].includes(state.mushafMode || 'page') && isBookLayout()) { flipBookAny(-1); return; }
       mushafContext.currentPage = Math.max(1, mushafContext.currentPage - 1);
       renderMushafModal();
     });
 
     document.getElementById('mushafNextPageBtn').addEventListener('click', () => {
       if (!mushafContext) return;
-      if ((state.mushafMode || 'page') === 'page' && isBookLayout()) { flipBook(1); return; }
+      if (['page', 'tafsir'].includes(state.mushafMode || 'page') && isBookLayout()) { flipBookAny(1); return; }
       mushafContext.currentPage = Math.min(604, mushafContext.currentPage + 1);
       renderMushafModal();
     });
@@ -3395,13 +3556,15 @@
     document.getElementById('mushafFontIncBtn').addEventListener('click', () => {
       state.mushafFontSize = Math.min(36, (state.mushafFontSize || 24) + 2);
       saveState();
-      document.getElementById('mushafContent').style.fontSize = `${state.mushafFontSize}px`;
+      if (state.mushafMode === 'tafsir') renderMushafModal();
+      else document.getElementById('mushafContent').style.fontSize = `${state.mushafFontSize}px`;
     });
 
     document.getElementById('mushafFontDecBtn').addEventListener('click', () => {
       state.mushafFontSize = Math.max(16, (state.mushafFontSize || 24) - 2);
       saveState();
-      document.getElementById('mushafContent').style.fontSize = `${state.mushafFontSize}px`;
+      if (state.mushafMode === 'tafsir') renderMushafModal();
+      else document.getElementById('mushafContent').style.fontSize = `${state.mushafFontSize}px`;
     });
 
     document.getElementById('mushafMarkDoneBtn').addEventListener('click', () => {
@@ -3834,7 +3997,7 @@
       const pages = riw === 'warsh' ? st.pagesWarsh : st.pagesHafs;
       const mb = (st.bytes / 1048576).toFixed(st.bytes > 104857600 ? 0 : 1);
       document.getElementById('offlineStorageText').textContent =
-        `محفوظ: ${audio} من ${st.totalAyahs} آية • ${pages} من ${st.totalPages} صفحة • ${mb} ميغا`;
+        `محفوظ: ${audio} من ${st.totalAyahs} آية • ${pages} من ${st.totalPages} صفحة • التفسير ${st.tafsir || 0} من 114 سورة • ${mb} ميغا`;
       if (st.running && st.progress) window.onOfflineProgress(st.progress, true);
     }
     window.onOfflineProgress = function (p, silent) {
@@ -3843,7 +4006,7 @@
       wrap.classList.remove('hidden');
       const pct = p.total ? Math.floor((p.done / p.total) * 100) : 0;
       document.getElementById('offlineProgressBar').style.width = `${pct}%`;
-      const what = p.kind === 'pages' ? 'صفحة' : 'آية';
+      const what = p.kind === 'pages' ? 'صفحة' : p.kind === 'tafsir' ? 'سورة' : 'آية';
       document.getElementById('offlineProgressText').textContent =
         `${p.finished ? (p.cancelled ? 'تم الإيقاف' : 'اكتمل') : 'جاري التحميل'}: ${p.done} / ${p.total} ${what} (${pct}%)` +
         (p.failed ? ` — تعذّر ${p.failed}` : '');
@@ -3853,7 +4016,7 @@
         if (!silent) {
           if (p.cancelled) showToast('تم إيقاف التحميل', 'يمكنك المتابعة لاحقاً من حيث توقفت.');
           else if (p.failed) showToast('اكتمل التحميل جزئياً', `تعذّر تحميل ${p.failed} ملف. أعد المحاولة عند توفر اتصال أفضل.`);
-          else showToast('اكتمل التحميل ✓', p.kind === 'pages' ? 'صفحات المصحف متوفرة الآن بدون إنترنت.' : 'التلاوة متوفرة الآن بدون إنترنت.');
+          else showToast('اكتمل التحميل ✓', p.kind === 'pages' ? 'صفحات المصحف متوفرة الآن بدون إنترنت.' : p.kind === 'tafsir' ? 'تفسير السعدي متوفر الآن بدون إنترنت.' : 'التلاوة متوفرة الآن بدون إنترنت.');
         }
       }
     };
@@ -3866,11 +4029,12 @@
         const v = document.getElementById('offlineSurahSelect').value;
         if (v !== 'all') { from = Number(v); to = Number(v); }
       }
-      const ok = B.offlineDownload(kind, kind === 'audio' ? currentReciter().id : riw, from, to);
+      const ok = B.offlineDownload(kind, kind === 'audio' ? currentReciter().id : kind === 'tafsir' ? 'saadi' : riw, from, to);
       if (!ok) showToast('يوجد تحميل جارٍ', 'انتظر حتى ينتهي التحميل الحالي أو أوقفه.');
     }
     document.getElementById('offlineAudioBtn').addEventListener('click', () => startOfflineDownload('audio'));
     document.getElementById('offlinePagesBtn').addEventListener('click', () => startOfflineDownload('pages'));
+    document.getElementById('offlineTafsirBtn').addEventListener('click', () => startOfflineDownload('tafsir'));
     document.getElementById('offlineCancelBtn').addEventListener('click', () => { try { window.AndroidBridge.offlineCancel(); } catch (e) {} });
     document.getElementById('offlineClearBtn').addEventListener('click', () => {
       const btn = document.getElementById('offlineClearBtn');

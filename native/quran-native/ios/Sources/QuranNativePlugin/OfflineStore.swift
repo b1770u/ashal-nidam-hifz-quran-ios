@@ -47,6 +47,21 @@ final class OfflineStore: NSObject, URLSessionDownloadDelegate {
     func audioFile(_ reciterId: String, _ code: String) -> URL {
         root.appendingPathComponent("audio/\(reciterId)/\(code).mp3")
     }
+    func tafsirFile(_ s: Int) -> URL { root.appendingPathComponent("tafsir/saadi/\(s).json") }
+    static func tafsirURLs(_ s: Int) -> [URL] {
+        [URL(string: "https://raw.githubusercontent.com/spa5k/tafsir_api/main/tafsir/ar-tafseer-al-saddi/\(s).json")!,
+         URL(string: "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/ar-tafseer-al-saddi/\(s).json")!]
+    }
+
+    /** Al-Sa'di tafsir of one surah: saved copy, or downloaded (and saved) now. Blocking; call off the main thread. */
+    func tafsirJSON(_ s: Int) -> String {
+        let f = tafsirFile(s)
+        if !fm.fileExists(atPath: f.path) {
+            for u in Self.tafsirURLs(s) { if fetchBlocking(u, to: f) { break } }
+        }
+        return (try? String(contentsOf: f, encoding: .utf8)) ?? ""
+    }
+
     func pageFile(_ edition: String, _ num: String) -> URL {
         root.appendingPathComponent("pages/\(edition)/\(num).svg")
     }
@@ -119,7 +134,9 @@ final class OfflineStore: NSObject, URLSessionDownloadDelegate {
     func startDownload(kind: String, key: String, from: Int, to: Int) -> Bool {
         if running { return false }
         var items: [(URL, URL)] = []
-        if kind == "pages" {
+        if kind == "tafsir" {
+            for su in 1...114 { items.append((Self.tafsirURLs(su)[0], tafsirFile(su))) }
+        } else if kind == "pages" {
             let edition = key == "warsh" ? "warsh-kfqc" : "hafs-kfqc"
             for p in 1...604 {
                 let num = String(format: "%03d", p)
@@ -190,7 +207,7 @@ final class OfflineStore: NSObject, URLSessionDownloadDelegate {
             content.body = "تعذّر تحميل \(failed) ملف. أعد المحاولة عند توفر اتصال أفضل."
         } else {
             content.title = "اكتمل التحميل ✓"
-            content.body = kind == "pages"
+            content.body = kind == "tafsir" ? "تفسير السعدي متوفر الآن بدون إنترنت." : kind == "pages"
                 ? "صفحات المصحف متوفرة الآن بدون إنترنت (رواية \(key == "warsh" ? "ورش" : "حفص"))."
                 : "التلاوة متوفرة الآن بدون إنترنت (\(Reciters.byId(key)?.name ?? ""))."
         }
@@ -248,7 +265,7 @@ final class OfflineStore: NSObject, URLSessionDownloadDelegate {
         }
         var progress: Any = NSNull()
         if !job.isEmpty { var p = job; p["finished"] = !running; p.removeValue(forKey: "running"); progress = p }
-        return ["audio": audio, "pagesWarsh": count("pages/warsh-kfqc"), "pagesHafs": count("pages/hafs-kfqc"),
+        return ["audio": audio, "pagesWarsh": count("pages/warsh-kfqc"), "pagesHafs": count("pages/hafs-kfqc"), "tafsir": count("tafsir/saadi"),
                 "totalAyahs": 6236, "totalPages": 604, "bytes": bytes, "running": running, "progress": progress]
     }
 

@@ -23,7 +23,7 @@
     { id: 'sudais', name: 'عبد الرحمن السديس', riwayah: 'hafs', mb: 420, folder: 'Abdurrahmaan_As-Sudais_64kbps' },
     { id: 'maher', name: 'ماهر المعيقلي', riwayah: 'hafs', mb: 450, folder: 'Maher_AlMuaiqly_64kbps' }
   ];
-  const EMPTY_STATUS = { audio: {}, pagesWarsh: 0, pagesHafs: 0, totalAyahs: 6236, totalPages: 604, bytes: 0, running: false, progress: null };
+  const EMPTY_STATUS = { audio: {}, pagesWarsh: 0, pagesHafs: 0, tafsir: 0, totalAyahs: 6236, totalPages: 604, bytes: 0, running: false, progress: null };
 
   // WebKit's own speech API does not work inside apps; the native one is used instead.
   try { window.webkitSpeechRecognition = undefined; window.SpeechRecognition = undefined; } catch (e) {}
