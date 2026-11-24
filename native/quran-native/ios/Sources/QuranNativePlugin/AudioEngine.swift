@@ -19,6 +19,7 @@ final class AudioEngine: NSObject {
     private var title = ""
     private var speed: Float = 1
     private var failuresInARow = 0
+    private var altIndex = 0          // which source of the current ayah is playing (backup hosts)
     private var sleepTimer: Timer?
     private var sleepAt: Date?
     private var endObserver: NSObjectProtocol?
@@ -46,6 +47,7 @@ final class AudioEngine: NSObject {
         guard !built.isEmpty else { return }
         items = built
         index = 0
+        altIndex = 0
         activateSession()
         setupRemoteCommands()
         playCurrent()
@@ -120,7 +122,11 @@ final class AudioEngine: NSObject {
     private func playCurrent() {
         guard index < items.count else { finishAll(); return }
         let it = items[index]
-        let url = OfflineStore.shared.audioURL(reciterId, it.surah, it.ayah)
+        guard let url = OfflineStore.shared.audioURL(reciterId, it.surah, it.ayah, alt: altIndex) else {
+            altIndex = 0
+            skipAfterError()
+            return
+        }
         let item = AVPlayerItem(url: url)
         item.audioTimePitchAlgorithm = .timeDomain
         observe(item)
@@ -136,6 +142,7 @@ final class AudioEngine: NSObject {
         endObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime, object: item, queue: .main) { [weak self] _ in
             guard let self = self else { return }
             self.failuresInARow = 0
+            self.altIndex = 0
             self.index += 1
             self.playCurrent()
         }
@@ -150,6 +157,17 @@ final class AudioEngine: NSObject {
 
     /// Ayah not available (e.g. offline and not saved): skip it; give up after 3 in a row.
     private func skipAfterError() {
+        // same ayah from the next host first
+        if index < items.count {
+            let it = items[index]
+            if OfflineStore.shared.audioURL(reciterId, it.surah, it.ayah, alt: altIndex + 1) != nil
+                && altIndex + 1 < OfflineStore.shared.audioSources(reciterId, it.surah, it.ayah).count {
+                altIndex += 1
+                playCurrent()
+                return
+            }
+        }
+        altIndex = 0
         failuresInARow += 1
         if failuresInARow >= 3 || index + 1 >= items.count {
             stop(emitEvent: "error")
@@ -182,11 +200,11 @@ final class AudioEngine: NSObject {
         }
         c.nextTrackCommand.addTarget { [weak self] _ in
             guard let self = self, self.index + 1 < self.items.count else { return .noSuchContent }
-            self.index += 1; self.playCurrent(); return .success
+            self.index += 1; self.altIndex = 0; self.playCurrent(); return .success
         }
         c.previousTrackCommand.addTarget { [weak self] _ in
             guard let self = self, self.isActive else { return .noSuchContent }
-            self.index = max(0, self.index - 1); self.playCurrent(); return .success
+            self.index = max(0, self.index - 1); self.altIndex = 0; self.playCurrent(); return .success
         }
     }
 

@@ -867,6 +867,10 @@
           <span id="offlineStorageText"></span>
           <button id="offlineClearBtn" type="button" class="shrink-0 font-bold text-red-600 px-2 py-1 rounded-lg bg-red-500/10">حذف التحميلات</button>
         </div>
+        <p class="text-[10px] leading-relaxed" style="color: var(--text-muted);">
+          المصادر: صفحات المصحف من Quran.ws (رخصة CC BY 4.0) عن مصحف المدينة لمجمع الملك فهد • تفسير السعدي من spa5k/tafsir_api (MIT) • التلاوات من everyayah.com ومواقع احتياطية.
+          نسخة احتياطية من الصفحات والتفسير على GitHub: b1770u/ashal-nidam-hifz-quran-data
+        </p>
       </div>
 
       <!-- App updates (Android) -->
@@ -2202,8 +2206,12 @@
     function loadPageMeta(page, riwayah) {
       const key = pageMetaKey(page, riwayah);
       if (!pageMetaCache[key]) {
-        pageMetaCache[key] = fetch(getMushafPageSvgUrl(page, riwayah))
-          .then(r => (r.ok ? r.text() : Promise.reject(new Error('page'))))
+        const ed = riwayah === 'warsh' ? 'warsh-kfqc' : 'hafs-kfqc', num = String(page).padStart(3, '0');
+        const urls = [getMushafPageSvgUrl(page, riwayah), `${DATA_MIRROR}/pages/${ed}/${num}.svg`, `https://cdn.quran.ws/svg/pages/v1.1.1/${ed}/${num}.svg`]
+          .filter((u, i, a) => a.indexOf(u) === i);
+        const tryFetch = (i) => i >= urls.length ? Promise.reject(new Error('page'))
+          : fetch(urls[i]).then(r => (r.ok ? r.text() : Promise.reject(new Error('page')))).catch(() => tryFetch(i + 1));
+        pageMetaCache[key] = tryFetch(0)
           .then(txt => {
             const vb = (txt.match(/viewBox="([^"]+)"/) || [, '0 0 345 550'])[1];
             const polys = [];
@@ -2376,7 +2384,12 @@
     // =========================================================================
     // TAFSIR AL-SA'DI (downloaded surah by surah, saved on the phone)
     // =========================================================================
+    // our own copy on GitHub first, then the original source
+    const DATA_MIRROR = 'https://b1770u.github.io/ashal-nidam-hifz-quran-data';
+    const DATA_MIRROR_RAW = 'https://raw.githubusercontent.com/b1770u/ashal-nidam-hifz-quran-data/main';
     const TAFSIR_URLS = (s) => [
+      `${DATA_MIRROR}/tafsir/saadi/${s}.json`,
+      `${DATA_MIRROR_RAW}/tafsir/saadi/${s}.json`,
       `https://raw.githubusercontent.com/spa5k/tafsir_api/main/tafsir/ar-tafseer-al-saddi/${s}.json`,
       `https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/ar-tafseer-al-saddi/${s}.json`
     ];

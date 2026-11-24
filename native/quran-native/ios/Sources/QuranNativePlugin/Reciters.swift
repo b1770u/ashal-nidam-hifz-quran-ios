@@ -8,23 +8,29 @@ struct Reciter {
     let folder: String
     let approxMb: Int
     var aliases: [String] = []
+    /// other hosts, tried in order after everyayah.com: {c} = SSSAAA, {g} = global ayah number
+    var backups: [String] = []
 
     func url(_ code: String) -> URL { URL(string: "https://everyayah.com/data/\(folder)/\(code).mp3")! }
+
+    func sources(_ code: String, _ global: Int) -> [URL] {
+        [url(code)] + backups.compactMap { URL(string: $0.replacingOccurrences(of: "{c}", with: code).replacingOccurrences(of: "{g}", with: String(global))) }
+    }
 }
 
 enum Reciters {
     static let all: [Reciter] = [
-        Reciter(id: "yassin", name: "ياسين الجزائري", riwayah: "warsh", folder: "warsh/warsh_yassin_al_jazaery_64kbps", approxMb: 640),
-        Reciter(id: "abdulbasit_warsh", name: "عبد الباسط عبد الصمد", riwayah: "warsh", folder: "warsh/warsh_Abdul_Basit_128kbps", approxMb: 1300),
-        Reciter(id: "dosary_warsh", name: "إبراهيم الدوسري", riwayah: "warsh", folder: "warsh/warsh_ibrahim_aldosary_128kbps", approxMb: 1200),
-        Reciter(id: "shuraym", name: "سعود الشريم", riwayah: "hafs", folder: "Saood_ash-Shuraym_64kbps", approxMb: 440, aliases: ["Saood_ash-Shuraym_128kbps"]),
-        Reciter(id: "husary", name: "محمود خليل الحصري", riwayah: "hafs", folder: "Husary_64kbps", approxMb: 650, aliases: ["Husary_128kbps"]),
-        Reciter(id: "husary_muallim", name: "الحصري (المعلّم)", riwayah: "hafs", folder: "Husary_Muallim_128kbps", approxMb: 1500),
-        Reciter(id: "minshawy", name: "محمد صديق المنشاوي", riwayah: "hafs", folder: "Minshawy_Murattal_128kbps", approxMb: 1100),
-        Reciter(id: "alafasy", name: "مشاري العفاسي", riwayah: "hafs", folder: "Alafasy_64kbps", approxMb: 520, aliases: ["Alafasy_128kbps"]),
-        Reciter(id: "abdulbasit", name: "عبد الباسط عبد الصمد", riwayah: "hafs", folder: "Abdul_Basit_Murattal_64kbps", approxMb: 600, aliases: ["Abdul_Basit_Murattal_192kbps"]),
-        Reciter(id: "sudais", name: "عبد الرحمن السديس", riwayah: "hafs", folder: "Abdurrahmaan_As-Sudais_64kbps", approxMb: 420),
-        Reciter(id: "maher", name: "ماهر المعيقلي", riwayah: "hafs", folder: "Maher_AlMuaiqly_64kbps", approxMb: 450),
+        Reciter(id: "yassin", name: "ياسين الجزائري", riwayah: "warsh", folder: "warsh/warsh_yassin_al_jazaery_64kbps", approxMb: 640, backups: ["https://www.everyayah.com/data/warsh/warsh_yassin_al_jazaery_64kbps/{c}.mp3"]),
+        Reciter(id: "abdulbasit_warsh", name: "عبد الباسط عبد الصمد", riwayah: "warsh", folder: "warsh/warsh_Abdul_Basit_128kbps", approxMb: 1300, backups: ["https://www.everyayah.com/data/warsh/warsh_Abdul_Basit_128kbps/{c}.mp3"]),
+        Reciter(id: "dosary_warsh", name: "إبراهيم الدوسري", riwayah: "warsh", folder: "warsh/warsh_ibrahim_aldosary_128kbps", approxMb: 1200, backups: ["https://www.everyayah.com/data/warsh/warsh_ibrahim_aldosary_128kbps/{c}.mp3"]),
+        Reciter(id: "shuraym", name: "سعود الشريم", riwayah: "hafs", folder: "Saood_ash-Shuraym_64kbps", approxMb: 440, aliases: ["Saood_ash-Shuraym_128kbps"], backups: ["https://mirrors.quranicaudio.com/everyayah/Saood_ash-Shuraym_128kbps/{c}.mp3", "https://cdn.islamic.network/quran/audio/64/ar.saoodshuraym/{g}.mp3", "https://verses.quran.com/Shuraym/mp3/{c}.mp3"]),
+        Reciter(id: "husary", name: "محمود خليل الحصري", riwayah: "hafs", folder: "Husary_64kbps", approxMb: 650, aliases: ["Husary_128kbps"], backups: ["https://mirrors.quranicaudio.com/everyayah/Husary_64kbps/{c}.mp3", "https://cdn.islamic.network/quran/audio/64/ar.husary/{g}.mp3"]),
+        Reciter(id: "husary_muallim", name: "الحصري (المعلّم)", riwayah: "hafs", folder: "Husary_Muallim_128kbps", approxMb: 1500, backups: ["https://mirrors.quranicaudio.com/everyayah/Husary_Muallim_128kbps/{c}.mp3"]),
+        Reciter(id: "minshawy", name: "محمد صديق المنشاوي", riwayah: "hafs", folder: "Minshawy_Murattal_128kbps", approxMb: 1100, backups: ["https://mirrors.quranicaudio.com/everyayah/Minshawy_Murattal_128kbps/{c}.mp3", "https://cdn.islamic.network/quran/audio/128/ar.minshawi/{g}.mp3", "https://verses.quran.com/Minshawi/Murattal/mp3/{c}.mp3"]),
+        Reciter(id: "alafasy", name: "مشاري العفاسي", riwayah: "hafs", folder: "Alafasy_64kbps", approxMb: 520, aliases: ["Alafasy_128kbps"], backups: ["https://mirrors.quranicaudio.com/everyayah/Alafasy_128kbps/{c}.mp3", "https://cdn.islamic.network/quran/audio/64/ar.alafasy/{g}.mp3", "https://verses.quran.com/Alafasy/mp3/{c}.mp3"]),
+        Reciter(id: "abdulbasit", name: "عبد الباسط عبد الصمد", riwayah: "hafs", folder: "Abdul_Basit_Murattal_64kbps", approxMb: 600, aliases: ["Abdul_Basit_Murattal_192kbps"], backups: ["https://mirrors.quranicaudio.com/everyayah/Abdul_Basit_Murattal_64kbps/{c}.mp3", "https://cdn.islamic.network/quran/audio/64/ar.abdulbasitmurattal/{g}.mp3", "https://verses.quran.com/AbdulBaset/Murattal/mp3/{c}.mp3"]),
+        Reciter(id: "sudais", name: "عبد الرحمن السديس", riwayah: "hafs", folder: "Abdurrahmaan_As-Sudais_64kbps", approxMb: 420, backups: ["https://mirrors.quranicaudio.com/everyayah/Abdurrahmaan_As-Sudais_192kbps/{c}.mp3", "https://cdn.islamic.network/quran/audio/64/ar.abdurrahmaansudais/{g}.mp3", "https://verses.quran.com/Sudais/mp3/{c}.mp3"]),
+        Reciter(id: "maher", name: "ماهر المعيقلي", riwayah: "hafs", folder: "Maher_AlMuaiqly_64kbps", approxMb: 450, backups: ["https://mirrors.quranicaudio.com/everyayah/Maher_AlMuaiqly_64kbps/{c}.mp3", "https://cdn.islamic.network/quran/audio/64/ar.mahermuaiqly/{g}.mp3"]),
     ]
 
     static func byId(_ id: String?) -> Reciter? { all.first { $0.id == id } }
@@ -41,4 +47,5 @@ enum QuranMeta {
         11, 8, 3, 9, 5, 4, 7, 3, 6, 3, 5, 4, 5, 6
     ]
     static func code(_ s: Int, _ a: Int) -> String { String(format: "%03d%03d", s, a) }
+    static func global(_ s: Int, _ a: Int) -> Int { (1..<max(1, s)).reduce(a) { $0 + ayahCounts[$1] } }
 }

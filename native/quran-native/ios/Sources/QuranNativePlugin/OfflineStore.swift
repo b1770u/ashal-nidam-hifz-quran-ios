@@ -48,9 +48,17 @@ final class OfflineStore: NSObject, URLSessionDownloadDelegate {
         root.appendingPathComponent("audio/\(reciterId)/\(code).mp3")
     }
     func tafsirFile(_ s: Int) -> URL { root.appendingPathComponent("tafsir/saadi/\(s).json") }
+    /// Our own copy on GitHub is tried first; the original hosts are the fallback.
+    static let mirror = "https://b1770u.github.io/ashal-nidam-hifz-quran-data"
+    static let mirrorRaw = "https://raw.githubusercontent.com/b1770u/ashal-nidam-hifz-quran-data/main"
     static func tafsirURLs(_ s: Int) -> [URL] {
-        [URL(string: "https://raw.githubusercontent.com/spa5k/tafsir_api/main/tafsir/ar-tafseer-al-saddi/\(s).json")!,
-         URL(string: "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/ar-tafseer-al-saddi/\(s).json")!]
+        ["\(mirror)/tafsir/saadi/\(s).json", "\(mirrorRaw)/tafsir/saadi/\(s).json",
+         "https://raw.githubusercontent.com/spa5k/tafsir_api/main/tafsir/ar-tafseer-al-saddi/\(s).json",
+         "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/ar-tafseer-al-saddi/\(s).json"].compactMap { URL(string: $0) }
+    }
+    func pageURLs(_ edition: String, _ num: String) -> [URL] {
+        ["\(Self.mirror)/pages/\(edition)/\(num).svg", "\(Self.mirrorRaw)/pages/\(edition)/\(num).svg",
+         String(format: pageURLTemplate, edition, num)].compactMap { URL(string: $0) }
     }
 
     /** Al-Sa'di tafsir of one surah: saved copy, or downloaded (and saved) now. Blocking; call off the main thread. */
@@ -66,29 +74,37 @@ final class OfflineStore: NSObject, URLSessionDownloadDelegate {
         root.appendingPathComponent("pages/\(edition)/\(num).svg")
     }
 
-    /// Saved file if present, else the online URL.
-    func audioURL(_ reciterId: String, _ s: Int, _ a: Int) -> URL {
+    func audioSources(_ reciterId: String, _ s: Int, _ a: Int) -> [URL] {
         let r = Reciters.byId(reciterId) ?? Reciters.all[0]
-        let c = QuranMeta.code(s, a)
-        let f = audioFile(r.id, c)
-        return fm.fileExists(atPath: f.path) ? f : r.url(c)
+        return r.sources(QuranMeta.code(s, a), QuranMeta.global(s, a))
     }
 
-    /// Downloads one ayah if missing (blocking; call off the main thread).
+    /// Saved file if present, else source number `alt` online (nil when there is no such source).
+    func audioURL(_ reciterId: String, _ s: Int, _ a: Int, alt: Int = 0) -> URL? {
+        let r = Reciters.byId(reciterId) ?? Reciters.all[0]
+        let f = audioFile(r.id, QuranMeta.code(s, a))
+        if fm.fileExists(atPath: f.path) { return f }
+        let src = audioSources(r.id, s, a)
+        return alt < src.count ? src[alt] : nil
+    }
+
+    /// Downloads one ayah if missing, trying every source (blocking; call off the main thread).
     @discardableResult
     func ensureAudio(_ reciterId: String, _ s: Int, _ a: Int) -> Bool {
         guard let r = Reciters.byId(reciterId) else { return false }
-        let c = QuranMeta.code(s, a)
-        return fetchBlocking(r.url(c), to: audioFile(r.id, c))
+        let dest = audioFile(r.id, QuranMeta.code(s, a))
+        for u in audioSources(r.id, s, a) { if fetchBlocking(u, to: dest) { return true } }
+        return false
     }
 
     /// Saves one mushaf page in the background; completion(true) when the file is on the phone.
     func cachePage(_ edition: String, _ num: String, completion: @escaping (Bool) -> Void) {
         let dest = pageFile(edition, num)
         if fm.fileExists(atPath: dest.path) { completion(true); return }
-        guard let url = URL(string: String(format: pageURLTemplate, edition, num)) else { completion(false); return }
+        let urls = pageURLs(edition, num)
         DispatchQueue.global(qos: .utility).async {
-            completion(self.fetchBlocking(url, to: dest))
+            for u in urls { if self.fetchBlocking(u, to: dest) { completion(true); return } }
+            completion(false)
         }
     }
 
@@ -133,22 +149,21 @@ final class OfflineStore: NSObject, URLSessionDownloadDelegate {
     /// kind "audio": key = reciter id, surahs from...to. kind "pages": key = riwayah.
     func startDownload(kind: String, key: String, from: Int, to: Int) -> Bool {
         if running { return false }
-        var items: [(URL, URL)] = []
+        var items: [([URL], URL)] = []
         if kind == "tafsir" {
-            for su in 1...114 { items.append((Self.tafsirURLs(su)[0], tafsirFile(su))) }
+            for su in 1...114 { items.append((Self.tafsirURLs(su), tafsirFile(su))) }
         } else if kind == "pages" {
             let edition = key == "warsh" ? "warsh-kfqc" : "hafs-kfqc"
             for p in 1...604 {
                 let num = String(format: "%03d", p)
-                if let u = URL(string: String(format: pageURLTemplate, edition, num)) { items.append((u, pageFile(edition, num))) }
+                items.append((pageURLs(edition, num), pageFile(edition, num)))
             }
         } else {
             guard let r = Reciters.byId(key) else { return false }
             let a = max(1, min(114, from)), b = max(1, min(114, to))
             for s in a...b {
                 for ay in 1...QuranMeta.ayahCounts[s] {
-                    let c = QuranMeta.code(s, ay)
-                    items.append((r.url(c), audioFile(r.id, c)))
+                    items.append((audioSources(r.id, s, ay), audioFile(r.id, QuranMeta.code(s, ay))))
                 }
             }
         }
@@ -156,11 +171,7 @@ final class OfflineStore: NSObject, URLSessionDownloadDelegate {
         job = ["running": !todo.isEmpty, "kind": kind, "key": key, "total": items.count,
                "done": items.count - todo.count, "failed": 0, "cancelled": false]
         if todo.isEmpty { finish(); return true }
-        for (src, dest) in todo {
-            let t = bgSession.downloadTask(with: src)
-            t.taskDescription = dest.path
-            t.resume()
-        }
+        for (srcs, dest) in todo { enqueue(srcs, dest, 0) }
         report(force: true)
         return true
     }
@@ -215,27 +226,56 @@ final class OfflineStore: NSObject, URLSessionDownloadDelegate {
         UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: "offline-done", content: content, trigger: nil))
     }
 
+    /// One background download; the task remembers its other sources so a failure moves on to the next one.
+    private func enqueue(_ srcs: [URL], _ dest: URL, _ i: Int) {
+        guard i < srcs.count else { return }
+        let info: [String: Any] = ["d": dest.path, "u": srcs.map { $0.absoluteString }, "i": i]
+        guard let data = try? JSONSerialization.data(withJSONObject: info), let desc = String(data: data, encoding: .utf8) else { return }
+        let t = bgSession.downloadTask(with: srcs[i])
+        t.taskDescription = desc
+        t.resume()
+    }
+
+    private func taskInfo(_ task: URLSessionTask) -> (dest: URL, srcs: [URL], i: Int)? {
+        guard let d = task.taskDescription?.data(using: .utf8),
+              let o = try? JSONSerialization.jsonObject(with: d) as? [String: Any],
+              let path = o["d"] as? String, let u = o["u"] as? [String], let i = o["i"] as? Int else { return nil }
+        return (URL(fileURLWithPath: path), u.compactMap { URL(string: $0) }, i)
+    }
+
+    /// Failed on this source: try the next one, or count it as failed when none is left.
+    private func failOrRetry(_ task: URLSessionTask) {
+        if let info = taskInfo(task), info.i + 1 < info.srcs.count, (job["cancelled"] as? Bool) != true {
+            enqueue(info.srcs, info.dest, info.i + 1)
+            return
+        }
+        var j = job
+        j["failed"] = (j["failed"] as? Int ?? 0) + 1
+        job = j
+    }
+
     func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
-        guard let path = downloadTask.taskDescription else { return }
-        let dest = URL(fileURLWithPath: path)
+        guard let info = taskInfo(downloadTask) else { return }
+        let dest = info.dest
         let okStatus = (downloadTask.response as? HTTPURLResponse)?.statusCode == 200
         if okStatus {
             try? fm.createDirectory(at: dest.deletingLastPathComponent(), withIntermediateDirectories: true)
             try? fm.removeItem(at: dest)
             try? fm.moveItem(at: location, to: dest)
         }
-        var j = job
-        if okStatus && fm.fileExists(atPath: dest.path) { j["done"] = (j["done"] as? Int ?? 0) + 1 }
-        else { j["failed"] = (j["failed"] as? Int ?? 0) + 1 }
-        job = j
+        if okStatus && fm.fileExists(atPath: dest.path) {
+            var j = job
+            j["done"] = (j["done"] as? Int ?? 0) + 1
+            job = j
+        } else {
+            failOrRetry(downloadTask)
+        }
         report()
     }
 
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
         if let e = error as NSError?, e.code != NSURLErrorCancelled {
-            var j = job
-            j["failed"] = (j["failed"] as? Int ?? 0) + 1
-            job = j
+            failOrRetry(task)
         }
         session.getAllTasks { tasks in
             if tasks.filter({ $0.state == .running || $0.state == .suspended }).isEmpty && self.running {

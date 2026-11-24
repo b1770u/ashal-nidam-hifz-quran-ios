@@ -4,3 +4,4 @@ ayah-pages.json  : Madinah Mushaf page number of each ayah, from api.alquran.clo
 Format: array of 114 surahs, each an array of ayahs in order (ayah 1 first).
 Note: in quran-warsh.json, a final ي is written ى (alef maksura) wherever the same word ends in ى in the Hafs text of the same verse (3269 words), so the Warsh text reads naturally in eastern (mashriqi) script.
 Tafsir al-Sa'di (downloaded by the app, not bundled): github.com/spa5k/tafsir_api (MIT), edition ar-tafseer-al-saddi.
+Mirror (tried first by the app): github.com/b1770u/ashal-nidam-hifz-quran-data (GitHub Pages b1770u.github.io/ashal-nidam-hifz-quran-data) — mushaf pages (Quran SVG by Quran.ws, CC BY 4.0; Mushaf al-Madinah by KFGQPC) and Tafsir al-Sa'di (spa5k/tafsir_api, MIT). Recitations are not mirrored: each reciter has backup hosts (quranicaudio, islamic.network, quran.com) tried after everyayah.com.
