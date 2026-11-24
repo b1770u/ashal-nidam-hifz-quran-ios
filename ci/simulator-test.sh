@@ -39,7 +39,7 @@ xcrun simctl terminate "$UDID" "$BUNDLE"
 # 3) mushaf opened directly (same path as the home-screen quick action)
 xcrun simctl spawn "$UDID" defaults write "$BUNDLE" pending_shortcut -string mushaf
 xcrun simctl launch "$UDID" "$BUNDLE"; sleep 15; shot 03-mushaf
-xcrun simctl spawn "$UDID" log show --last 2m --style compact --predicate 'eventMessage CONTAINS "QuranDBG"' 2>/dev/null | tail -20 || true
+xcrun simctl spawn "$UDID" log show --last 2m --style compact --predicate 'eventMessage CONTAINS[c] "QuranDBG"' 2>/dev/null | tail -20 || true
 xcrun simctl terminate "$UDID" "$BUNDLE"
 
 # crash check

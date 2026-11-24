@@ -216,11 +216,39 @@
       25% { transform: translateX(-4px); }
       75% { transform: translateX(4px); }
     }
+    /* current ayah while reciting: transparent app colour */
     .ayah-playing {
-      background-color: color-mix(in srgb, var(--gold) 22%, transparent);
-      border-radius: 8px;
-      padding: 0 4px;
+      background-color: rgba(15, 92, 74, 0.16);
+      box-shadow: 0 0 0 3px rgba(15, 92, 74, 0.16);
+      border-radius: 6px;
+      transition: background-color 0.25s;
     }
+    html.dark .ayah-playing, .mushaf-theme-dark .ayah-playing { background-color: rgba(52, 211, 153, 0.20); box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.20); }
+    .ayah-press { background-color: rgba(15, 92, 74, 0.08); border-radius: 6px; }
+    /* ayah areas over the printed page image */
+    .page-zoom, .page-art { position: absolute; inset: 0; }
+    .page-art img { width: 100%; height: 100%; display: block; }
+    .ayah-overlay { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; }
+    .page-zoom { overflow: hidden; }
+    .ayah-overlay path { fill: transparent; stroke: none; pointer-events: all; transition: fill 0.25s; }
+    .ayah-overlay path.ayah-playing { fill: rgba(15, 92, 74, 0.18); box-shadow: none; }
+    .ayah-overlay path.ayah-press { fill: rgba(15, 92, 74, 0.09); }
+    .mushaf-theme-dark .ayah-overlay path.ayah-playing { fill: rgba(52, 211, 153, 0.22); }
+    #mushafContent { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+    /* Warsh "easy reading" pages (eastern dotting), laid out like a printed mushaf page */
+    .text-page { position: absolute; inset: 0; display: flex; flex-direction: column; border-radius: 6px;
+      border: 2px solid color-mix(in srgb, var(--gold) 75%, transparent);
+      box-shadow: inset 0 0 0 4px var(--book-paper, transparent), inset 0 0 0 5px color-mix(in srgb, var(--emerald) 45%, transparent); }
+    .text-page .tp-body { flex: 1; overflow: hidden; padding: 7% 6% 2%; font-family: 'Amiri', serif; line-height: 1.95;
+      text-align: justify; text-align-last: center; direction: rtl; color: inherit; }
+    .text-page .tp-foot { text-align: center; font-size: 11px; font-weight: 700; opacity: 0.55; padding-bottom: 4%; font-family: 'Tajawal', sans-serif; }
+    .text-page .tp-surah { display: block; text-align: center; font-weight: 700; margin: 0.15em 0 0.2em; padding: 0.1em 0;
+      border: 1.5px solid color-mix(in srgb, var(--gold) 70%, transparent); border-radius: 0.6em;
+      background: color-mix(in srgb, var(--emerald) 10%, transparent); color: var(--emerald); }
+    html.dark .text-page .tp-surah, .mushaf-theme-dark .text-page .tp-surah { color: #E6F4F0; }
+    .text-page .tp-basmala { display: block; text-align: center; color: var(--emerald); margin-bottom: 0.1em; }
+    html.dark .text-page .tp-basmala, .mushaf-theme-dark .text-page .tp-basmala { color: #9FD9C5; }
+    .text-page .tp-num { color: var(--gold); font-size: 0.8em; white-space: nowrap; margin: 0 0.12em; }
 
     @keyframes slideDown {
       from { opacity: 0; transform: translate(-50%, -18px); }
@@ -552,6 +580,9 @@
             <i id="audioPlayIcon" data-lucide="play" class="w-3.5 h-3.5"></i>
             <span id="audioReciterLabel">ياسين الجزائري</span>
           </button>
+          <button id="audioStopBtn" type="button" class="hidden w-8 h-8 rounded-xl soft-surface font-bold shrink-0 flex items-center justify-center" title="إيقاف التلاوة" aria-label="إيقاف التلاوة">
+            <i data-lucide="square" class="w-3.5 h-3.5"></i>
+          </button>
           <button id="audioRepeatBtn" type="button" class="px-2 py-1.5 rounded-xl soft-surface font-bold shrink-0" title="تكرار كل آية">آية ×1</button>
           <span id="audioStatusText" class="text-[11px] truncate hidden sm:inline" style="color: var(--text-muted);"></span>
         </div>
@@ -711,6 +742,13 @@
         <div class="grid grid-cols-2 gap-2">
           <button id="setWarshBtn" type="button" class="p-2.5 rounded-xl border text-xs font-bold transition">ورش عن نافع</button>
           <button id="setHafsBtn" type="button" class="p-2.5 rounded-xl border text-xs font-bold transition">حفص عن عاصم</button>
+        </div>
+        <div id="warshStyleRow" class="flex items-center justify-between gap-2">
+          <p class="text-xs font-bold shrink-0">شكل مصحف ورش</p>
+          <select id="warshStyleSelect" class="min-w-0 flex-1 max-w-[60%] rounded-xl px-3 py-1.5 text-xs font-bold soft-surface border" style="border-color: var(--border-soft);">
+            <option value="easy">سهل القراءة (إملاء مشرقي)</option>
+            <option value="madinah">مصحف المدينة (ضبط مغاربي)</option>
+          </select>
         </div>
         <div class="flex items-center justify-between gap-2">
           <p class="text-xs font-bold shrink-0">القارئ</p>
@@ -895,7 +933,7 @@
 
   <audio id="quranAudioEl" preload="none" referrerpolicy="no-referrer" playsinline></audio>
 
-  <script>window.__IOS_APP_VERSION__ = "1.0.2";</script>
+  <script>window.__IOS_APP_VERSION__ = "1.0.3";</script>
   <script src="ios-bridge.js"></script>
   <script>
     // Native Android speech recognition bridge (Android WebView has no Web Speech API)
@@ -1238,6 +1276,7 @@
       audioSpeed: 1,
       reciterWarsh: 'yassin',
       reciterHafs: 'shuraym',
+      warshStyle: 'easy',
       autoBackup: true,
       pageSound: true,
       yesterdayLinked: {},
@@ -1632,8 +1671,11 @@
       const icon = document.getElementById('audioPlayIcon');
       const repBtn = document.getElementById('audioRepeatBtn');
       const status = document.getElementById('audioStatusText');
-      if (lbl) lbl.textContent = audioPlaying ? 'إيقاف التلاوة' : reciterName;
-      if (icon) icon.setAttribute('data-lucide', audioPlaying ? 'pause' : 'play');
+      const isPaused = audioPlaying && (NATIVE_AUDIO ? (nativeAudio.active && !nativeAudio.playing && !!nativeAudio.ayah) : audioEl.paused);
+      if (lbl) lbl.textContent = !audioPlaying ? reciterName : (isPaused ? 'متابعة التلاوة' : 'إيقاف مؤقت');
+      if (icon) icon.setAttribute('data-lucide', !audioPlaying || isPaused ? 'play' : 'pause');
+      const stopBtn = document.getElementById('audioStopBtn');
+      if (stopBtn) stopBtn.classList.toggle('hidden', !audioPlaying);
       if (repBtn) repBtn.textContent = `آية ×${state.audioRepeat || 1}`;
       const rr = document.getElementById('rangeRepeatBtn');
       if (rr) rr.textContent = `الورد ×${state.rangeRepeat || 1}`;
@@ -1647,7 +1689,7 @@
         hBtn.classList.toggle('hidden', !audioPlaying);
         const hIcon = document.getElementById('mushafHandleAudioIcon');
         const paused = NATIVE_AUDIO && nativeAudio.active && !nativeAudio.playing;
-        if (hIcon) hIcon.setAttribute('data-lucide', paused ? 'play' : (NATIVE_AUDIO ? 'pause' : 'square'));
+        if (hIcon) hIcon.setAttribute('data-lucide', isPaused ? 'play' : 'pause');
       }
       if (NATIVE_AUDIO) {
         const cur = nativeAudio.active && nativeAudio.ayah ? nativeAudio : null;
@@ -1655,9 +1697,7 @@
           ((state.rangeRepeat || 1) > 1 ? ` • الجولة ${cur.round}/${state.rangeRepeat}` : '') + (nativeAudio.playing ? '' : ' • متوقف مؤقتاً') : '';
         if (status) status.textContent = txt;
         if (status2) status2.textContent = txt;
-        document.querySelectorAll('[data-ayah-span]').forEach(el => {
-          el.classList.toggle('ayah-playing', !!cur && el.dataset.ayahSpan === `${cur.surah}:${cur.ayah}`);
-        });
+        applyAyahHighlight();
         if (window.lucide) lucide.createIcons();
         return;
       }
@@ -1670,11 +1710,7 @@
           status.textContent = '';
         }
       }
-      document.querySelectorAll('[data-ayah-span]').forEach(el => {
-        const cur = audioPlaying ? audioQueue[audioIdx] : null;
-        const isCur = cur && el.dataset.ayahSpan === `${cur.surah}:${cur.ayah}`;
-        el.classList.toggle('ayah-playing', !!isCur);
-      });
+      applyAyahHighlight();
       if (window.lucide) lucide.createIcons();
     }
 
@@ -2069,6 +2105,260 @@
     }
 
     // =========================================================================
+    // PAGES: ayah areas, centering, Warsh easy pages, highlight, long-press
+    // =========================================================================
+    function syncJSON(path) {
+      const x = new XMLHttpRequest();
+      x.open('GET', path, false);
+      x.send(null);
+      return JSON.parse(x.responseText);
+    }
+    let PAGE_MAP = null;          // [surah-1][ayah-1] -> page
+    let PAGE_INDEX = null;        // page -> [[surah, ayah], ...]
+    function pageMap() {
+      if (PAGE_MAP) return PAGE_MAP;
+      try {
+        const raw = window.AndroidBridge && window.AndroidBridge.getPageMap ? window.AndroidBridge.getPageMap() : '';
+        PAGE_MAP = raw ? JSON.parse(raw) : syncJSON('data/ayah-pages.json');
+      } catch (e) { PAGE_MAP = []; }
+      return PAGE_MAP;
+    }
+    function ayahPageSync(s, a) {
+      const m = pageMap();
+      return (m[s - 1] && m[s - 1][a - 1]) || 0;
+    }
+    function pageAyahs(page) {
+      if (!PAGE_INDEX) {
+        PAGE_INDEX = {};
+        pageMap().forEach((ayahs, si) => ayahs.forEach((pg, ai) => { (PAGE_INDEX[pg] = PAGE_INDEX[pg] || []).push([si + 1, ai + 1]); }));
+      }
+      return PAGE_INDEX[page] || [];
+    }
+    const verseTextCache = {};
+    function surahVersesSync(surah, riwayah) {
+      const k = `${riwayah}-${surah}`;
+      if (verseTextCache[k]) return verseTextCache[k];
+      let verses = [];
+      try {
+        if (window.AndroidBridge && window.AndroidBridge.getSurahText) verses = JSON.parse(window.AndroidBridge.getSurahText(riwayah, surah) || '[]');
+        else {
+          const all = syncJSON(riwayah === 'warsh' ? 'data/quran-warsh.json' : 'data/quran-hafs.json');
+          verses = (all[surah - 1] || []).map((t, i) => ({ verse: i + 1, text: t }));
+        }
+      } catch (e) {}
+      verseTextCache[k] = verses;
+      return verses;
+    }
+
+    /** Warsh in eastern (easy) dotting is drawn from the bundled text instead of the Madinah page images. */
+    function usesTextPages() {
+      return state.riwayah === 'warsh' && state.warshStyle !== 'madinah';
+    }
+
+    // ---- printed page images: ayah areas + horizontal centering, read from the page SVG itself ----
+    const pageMetaCache = {};
+    function pageMetaKey(page, riwayah) { return `${riwayah === 'warsh' ? 'warsh-kfqc' : 'hafs-kfqc'}:${page}`; }
+    function cachedPageShift(page, riwayah) {
+      const v = localStorage.getItem('pshift:' + pageMetaKey(page, riwayah));
+      return v == null ? 0 : Number(v) || 0;
+    }
+    function measurePageShift(svgText, key) {
+      const cached = localStorage.getItem('pshift:' + key);
+      if (cached != null) return Number(cached) || 0;
+      let shift = 0;
+      try {
+        const host = document.createElement('div');
+        host.style.cssText = 'position:fixed;left:-10000px;top:0;width:345px;height:550px;visibility:hidden;pointer-events:none;';
+        host.innerHTML = svgText.replace(/^<\?xml[^>]*>/, '');
+        document.body.appendChild(host);
+        const svg = host.querySelector('svg');
+        svg.setAttribute('width', '345'); svg.setAttribute('height', '550');
+        const content = svg.querySelector('#content');
+        if (content) {
+          const a = content.getBoundingClientRect(), b = svg.getBoundingClientRect();
+          const left = a.left - b.left, right = b.right - a.right;
+          if (a.width > 100) shift = Math.max(-16, Math.min(16, (right - left) / 2));
+        }
+        host.remove();
+      } catch (e) {}
+      localStorage.setItem('pshift:' + key, shift.toFixed(2));
+      return shift;
+    }
+    function loadPageMeta(page, riwayah) {
+      const key = pageMetaKey(page, riwayah);
+      if (!pageMetaCache[key]) {
+        pageMetaCache[key] = fetch(getMushafPageSvgUrl(page, riwayah))
+          .then(r => (r.ok ? r.text() : Promise.reject(new Error('page'))))
+          .then(txt => {
+            const vb = (txt.match(/viewBox="([^"]+)"/) || [, '0 0 345 550'])[1];
+            const polys = [];
+            const re = /<path class="ayahPolygon"[^>]*>/g;
+            let m;
+            while ((m = re.exec(txt))) {
+              const tag = m[0];
+              const su = (tag.match(/ surah="(\d+)"/) || [])[1], ay = (tag.match(/ ayah="(\d+)"/) || [])[1], d = (tag.match(/ d="([^"]+)"/) || [])[1];
+              if (su && ay && d) polys.push({ s: Number(su), a: Number(ay), d });
+            }
+            return { vb, polys, shift: measurePageShift(txt, key) };
+          })
+          .catch(() => { delete pageMetaCache[key]; return null; });
+      }
+      return pageMetaCache[key];
+    }
+    /** Adds the clickable ayah areas over a page image and centres the page. `art` is a .page-art element. */
+    function decoratePageArt(art, page, riwayah, widthPx) {
+      if (!art) return;
+      const s0 = cachedPageShift(page, riwayah);
+      art.style.transform = s0 ? `translateX(${(s0 * widthPx / 345).toFixed(1)}px)` : '';
+      loadPageMeta(page, riwayah).then(meta => {
+        if (!meta || !art.isConnected || Number(art.dataset.page) !== page) return;
+        art.style.transform = meta.shift ? `translateX(${(meta.shift * widthPx / 345).toFixed(1)}px)` : '';
+        const ov = art.querySelector('.ayah-overlay');
+        if (!ov) return;
+        ov.setAttribute('viewBox', meta.vb);
+        ov.setAttribute('preserveAspectRatio', 'none');
+        ov.innerHTML = meta.polys.map(p => `<path data-ayah="${p.s}:${p.a}" d="${p.d}"/>`).join('');
+        applyAyahHighlight();
+      });
+    }
+
+    // ---- Warsh easy pages (text laid out like a printed page, font size fitted to the page) ----
+    const textPageFit = {};
+    function textPageBody(page) {
+      let html = '';
+      let lastSurah = 0;
+      for (const [su, ay] of pageAyahs(page)) {
+        const verses = surahVersesSync(su, 'warsh');
+        const v = verses[ay - 1];
+        if (!v) continue;
+        if (ay === 1) {
+          if (lastSurah) html += '<br>';
+          html += `<span class="tp-surah">سورة ${SURAH_NAMES[su] || ''}</span>`;
+          if (su !== 1 && su !== 9) html += '<span class="tp-basmala">بِسْمِ اِ۬للَّهِ اِ۬لرَّحْمَٰنِ اِ۬لرَّحِيمِ</span>';
+        }
+        lastSurah = su;
+        html += `<span data-ayah-span="${su}:${ay}">${v.text}</span><span class="tp-num">﴿${toArabicDigits(ay)}﴾</span> `;
+      }
+      return html;
+    }
+    function textPageHtml(page, fontPx) {
+      return `<div class="text-page mushaf-page-frame" data-page="${page}">
+          <div class="tp-body" style="font-size:${fontPx}px">${textPageBody(page)}</div>
+          <div class="tp-foot">${toArabicDigits(page)}</div>
+        </div>`;
+    }
+    /** Largest font size that fits the page box; cached per page and size. */
+    function fitTextPage(page, w, h) {
+      const key = `${page}:${Math.round(w)}x${Math.round(h)}`;
+      if (textPageFit[key]) return textPageFit[key];
+      const host = document.createElement('div');
+      host.style.cssText = `position:fixed;left:-10000px;top:0;width:${w}px;height:${h}px;visibility:hidden;`;
+      document.body.appendChild(host);
+      host.innerHTML = textPageHtml(page, 20);
+      const body = host.querySelector('.tp-body');
+      let lo = 8, hi = Math.max(14, Math.round(w / 9)), best = lo;
+      for (let i = 0; i < 9; i++) {
+        const mid = (lo + hi) / 2;
+        body.style.fontSize = mid + 'px';
+        if (body.scrollHeight <= body.clientHeight + 1) { best = mid; lo = mid; } else hi = mid;
+      }
+      host.remove();
+      textPageFit[key] = Math.floor(best * 10) / 10;
+      return textPageFit[key];
+    }
+
+    // ---- highlight the ayah being recited (text, printed page, Warsh page) and follow it ----
+    let lastFollowKey = '';
+    function currentRecitedAyah() {
+      if (NATIVE_AUDIO) return nativeAudio.active && nativeAudio.ayah ? { surah: nativeAudio.surah, ayah: nativeAudio.ayah } : null;
+      return audioPlaying && audioQueue[audioIdx] ? audioQueue[audioIdx] : null;
+    }
+    function applyAyahHighlight() {
+      const cur = currentRecitedAyah();
+      const key = cur ? `${cur.surah}:${cur.ayah}` : '';
+      document.querySelectorAll('[data-ayah-span],[data-ayah]').forEach(el => {
+        el.classList.toggle('ayah-playing', !!key && (el.dataset.ayahSpan || el.dataset.ayah) === key);
+      });
+      if (!key || key === lastFollowKey) return;
+      lastFollowKey = key;
+      // keep the recited ayah on screen: turn the page when the recitation moves on
+      const modal = document.getElementById('mushafModal');
+      if (!mushafContext || !modal || modal.classList.contains('hidden') || (state.mushafMode || 'page') !== 'page') return;
+      const pg = ayahPageSync(cur.surah, cur.ayah);
+      if (!pg) return;
+      if (isBookLayout()) {
+        const r = spreadRight(mushafContext.currentPage);
+        if (pg === r || pg === r + 1) return;
+        if (spreadRight(pg) === r + 2 && !bookAnimating) flipBook(1);
+        else { mushafContext.currentPage = pg; renderMushafModal(); }
+      } else if (pg !== mushafContext.currentPage) {
+        mushafContext.currentPage = pg;
+        renderMushafModal();
+      } else {
+        const el = document.querySelector(`[data-ayah-span="${key}"]`);
+        if (el && state.mushafMode === 'text') el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+
+    // ---- long-press an ayah (2 s) to hear that ayah alone ----
+    function playSingleAyah(surah, ayah) {
+      stopAudio();
+      // the user chose this ayah: keep the page where it is if the ayah is visible, otherwise go to it
+      lastFollowKey = '';
+      if (NATIVE_AUDIO) {
+        audioPlaying = true;
+        nativeAudio = { active: true, playing: false, surah, ayah, rep: 1, round: 1 };
+        window.AndroidBridge.audioPlay(JSON.stringify({
+          reciter: currentReciter().id, title: `سورة ${SURAH_NAMES[surah] || ''}`,
+          items: [[surah, ayah]], ayahRepeat: state.audioRepeat || 1, rangeRepeat: 1, speed: state.audioSpeed || 1
+        }));
+      } else {
+        audioQueue = [{ surah, ayah }];
+        audioIdx = 0; audioRepDone = 0; audioRangeDone = 0; audioFallbackStep = 0;
+        audioPlaying = true;
+        playCurrentQueueItem();
+      }
+      updateAudioUI();
+    }
+    (function setupLongPress() {
+      const host = document.getElementById('mushafContent');
+      let timer = null, feedback = null, start = null, target = null, fired = false;
+      const keyOf = el => el.dataset.ayahSpan || el.dataset.ayah;
+      const mark = (on) => {
+        if (!target) return;
+        const k = keyOf(target);
+        document.querySelectorAll('[data-ayah-span],[data-ayah]').forEach(el => { if (keyOf(el) === k) el.classList.toggle('ayah-press', on); });
+      };
+      const cancel = () => { clearTimeout(timer); clearTimeout(feedback); timer = feedback = null; mark(false); target = null; };
+      host.addEventListener('pointerdown', (e) => {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        const el = e.target.closest && e.target.closest('[data-ayah-span],[data-ayah]');
+        if (!el || mushafZoom.s > 1.01) return;
+        cancel();
+        fired = false;
+        target = el;
+        start = { x: e.clientX, y: e.clientY };
+        feedback = setTimeout(() => mark(true), 350);
+        timer = setTimeout(() => {
+          const [su, ay] = keyOf(el).split(':').map(Number);
+          mark(false);
+          fired = true;
+          target = null;
+          try { if (navigator.vibrate) navigator.vibrate(30); } catch (err) {}
+          playSingleAyah(su, ay);
+        }, 2000);
+      });
+      host.addEventListener('pointermove', (e) => {
+        if (target && start && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 12) cancel();
+      });
+      ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => host.addEventListener(ev, () => { if (target) cancel(); }));
+      host.addEventListener('touchmove', (e) => { if (e.touches && e.touches.length > 1) cancel(); }, { passive: true });
+      // a long-press must not also toggle the hidden-ayah reveal (self-test)
+      host.addEventListener('click', (e) => { if (fired) { e.stopPropagation(); e.preventDefault(); fired = false; } }, true);
+      host.addEventListener('contextmenu', (e) => e.preventDefault());
+    })();
+
+    // =========================================================================
     // BOOK MODE (tablet landscape): two-page spread + realistic page turn
     // =========================================================================
     const BOOK_RATIO = 550 / 345;          // mushaf page height / width
@@ -2101,10 +2391,21 @@
       return { pageW, pageH, pad, innerW, innerH };
     }
     function bookPageHtml(p, g) {
+      if (usesTextPages()) {
+        const fs = fitTextPage(p, g.pageW, g.pageH);
+        return `${textPageHtml(p, fs)}<div class="book-under-shade"></div>`;
+      }
       const url = getMushafPageSvgUrl(p, state.riwayah);
-      return `<div class="book-img mushaf-svg-img" style="left:${g.pad}px;top:${g.pad}px;width:${g.innerW}px;height:${g.innerH}px;background-image:url('${url}')"></div>
+      return `<div class="page-art" data-page="${p}" style="left:${g.pad}px;top:${g.pad}px;width:${g.innerW}px;height:${g.innerH}px;right:auto;bottom:auto;">
+                <div class="book-img mushaf-svg-img" style="left:0;top:0;width:100%;height:100%;background-image:url('${url}')"></div>
+                <svg class="ayah-overlay" viewBox="0 0 345 550" preserveAspectRatio="none"></svg>
+              </div>
               <div class="book-num" style="color: var(--text-main);">${toArabicDigits(p)}</div>
               <div class="book-under-shade"></div>`;
+    }
+    function decorateBookPages(g) {
+      document.querySelectorAll('#bookWrap .book-page .page-art').forEach(art => decoratePageArt(art, Number(art.dataset.page), state.riwayah, g.innerW));
+      applyAyahHighlight();
     }
     function preloadPages(pages) {
       pages.filter(p => p >= 1 && p <= 604).forEach(p => { const im = new Image(); im.src = getMushafPageSvgUrl(p, state.riwayah); });
@@ -2153,8 +2454,11 @@
           <div id="bookLeft" class="book-page left" style="width:${g.pageW}px">${bookPageHtml(l, g)}</div>
           <div id="bookRight" class="book-page right" style="width:${g.pageW}px">${bookPageHtml(r, g)}</div>
         </div>`;
-      checkBookPage(r, document.getElementById('bookRight'));
-      checkBookPage(l, document.getElementById('bookLeft'));
+      if (!usesTextPages()) {
+        checkBookPage(r, document.getElementById('bookRight'));
+        checkBookPage(l, document.getElementById('bookLeft'));
+      }
+      decorateBookPages(g);
       preloadPages([r - 2, r - 1, r + 2, r + 3]);
     }
 
@@ -2202,6 +2506,7 @@
       // the page revealed under the turning leaf
       const underEl = fwd ? leftEl : rightEl;
       underEl.innerHTML = bookPageHtml(fwd ? nl : nr, g);
+      decorateBookPages(g);
       const underShade = underEl.querySelector('.book-under-shade');
       underShade.style.background = fwd
         ? 'linear-gradient(to left, rgba(0,0,0,0.45), rgba(0,0,0,0.12) 45%, transparent 85%)'
@@ -2234,9 +2539,15 @@
         // (forward strips are 2px wider on their outer side, so their slice starts 2px earlier)
         const frontX = fwd ? W - (k + 1) * sw - 2 : k * sw;
         const backX = fwd ? k * sw : W - (k + 1) * sw - 2;
-        const img = (url, x) => `<div class="book-img mushaf-svg-img" style="left:${g.pad - x}px;top:${g.pad}px;width:${g.innerW}px;height:${g.innerH}px;background-image:url('${url}')"></div>`;
-        st.innerHTML = `<div class="leaf-face front">${img(frontUrl, frontX)}<div class="leaf-shade"></div></div>
-                        <div class="leaf-face back">${img(backUrl, backX)}<div class="leaf-shade"></div></div>`;
+        const img = (pg, url, x) => {
+          if (usesTextPages()) {
+            return `<div style="position:absolute;top:0;left:${-x}px;width:${W}px;height:${g.pageH}px;">${textPageHtml(pg, fitTextPage(pg, W, g.pageH))}</div>`;
+          }
+          const sh = cachedPageShift(pg, state.riwayah) * g.innerW / 345;
+          return `<div class="book-img mushaf-svg-img" style="left:${g.pad - x + sh}px;top:${g.pad}px;width:${g.innerW}px;height:${g.innerH}px;background-image:url('${url}')"></div>`;
+        };
+        st.innerHTML = `<div class="leaf-face front">${img(frontPage, frontUrl, frontX)}<div class="leaf-shade"></div></div>
+                        <div class="leaf-face back">${img(backPage, backUrl, backX)}<div class="leaf-shade"></div></div>`;
         parent.appendChild(st);
         strips.push(st);
         shades.push([...st.querySelectorAll(':scope > .leaf-face > .leaf-shade')]);
@@ -2355,16 +2666,36 @@
         const availW = Math.max(200, contentEl.clientWidth - 24 - 12);
         const imgH = Math.floor(Math.min(availH, availW * (550 / 345)));
         const imgW = Math.floor(imgH * (345 / 550));
+        if (usesTextPages()) {
+          // Warsh, easy reading: the page is drawn from the bundled text (same page split)
+          const tw = imgW + 12, th = imgH + 26;
+          const fs = fitTextPage(currentPage, tw, th);
+          contentEl.innerHTML = `
+            <div class="flex items-center justify-center" style="line-height: 1; min-height: ${boxH}px;">
+              <div id="mushafImgContainer" class="relative" style="width:${tw}px;height:${th}px;--book-paper:${bookPaperColor()};">
+                <div class="page-zoom">${textPageHtml(currentPage, fs)}</div>
+              </div>
+            </div>`;
+          applyAyahHighlight();
+          if (window.lucide) lucide.createIcons();
+          return;
+        }
         contentEl.innerHTML = `
           <div class="flex items-center justify-center" style="line-height: 1; min-height: ${boxH}px;">
             <div class="mushaf-page-frame mushaf-fit-frame rounded-2xl p-1.5">
-              <div id="mushafImgContainer" class="relative flex items-center justify-center" style="width:${imgW}px;height:${imgH}px;">
-                <img id="mushafPageImg" src="${svgUrl}" alt="صفحة المصحف ${currentPage}" class="mushaf-svg-img rounded-lg select-none" style="width:${imgW}px;height:${imgH}px;" />
+              <div id="mushafImgContainer" class="relative overflow-hidden" style="width:${imgW}px;height:${imgH}px;">
+                <div class="page-zoom">
+                  <div class="page-art" data-page="${currentPage}">
+                    <img id="mushafPageImg" src="${svgUrl}" alt="صفحة المصحف ${currentPage}" class="mushaf-svg-img rounded-lg select-none" />
+                    <svg class="ayah-overlay" viewBox="0 0 345 550" preserveAspectRatio="none"></svg>
+                  </div>
+                </div>
               </div>
               <div class="text-center pt-1 text-[11px] font-bold font-sans" style="color: var(--text-muted);">${toArabicDigits(currentPage)}</div>
             </div>
           </div>
         `;
+        decoratePageArt(contentEl.querySelector('.page-art'), currentPage, state.riwayah, imgW);
 
         const imgEl = document.getElementById('mushafPageImg');
         if (imgEl) {
@@ -2757,6 +3088,8 @@
         const riw = state.riwayah === 'warsh' ? 'warsh' : 'hafs';
         rs.innerHTML = RECITERS.filter(r => r.riwayah === riw).map(r => `<option value="${r.id}">${r.name}</option>`).join('');
         rs.value = currentReciter().id;
+        document.getElementById('warshStyleRow').classList.toggle('hidden', state.riwayah !== 'warsh');
+        document.getElementById('warshStyleSelect').value = state.warshStyle === 'madinah' ? 'madinah' : 'easy';
       } catch (e) {}
       try { refreshOfflineUI(); } catch (e) {}
       try {
@@ -2856,10 +3189,7 @@
       if (mushafShell.classList.contains('panels-hidden')) showMushafPanels(); else hideMushafPanels();
     }
     document.getElementById('mushafHandleBtn').addEventListener('click', toggleMushafPanels);
-    document.getElementById('mushafHandleAudioBtn').addEventListener('click', () => {
-      if (NATIVE_AUDIO) { try { window.AndroidBridge.audioToggle(); } catch (e) {} }
-      else stopAudio();
-    });
+    document.getElementById('mushafHandleAudioBtn').addEventListener('click', () => toggleRecitation());
     // any touch inside a panel keeps it open for another 4 s
     ['mushafTopPanel', 'mushafBottomPanel'].forEach(id => {
       const el = document.getElementById(id);
@@ -2913,7 +3243,7 @@
     let mushafPinched = false;
     let zStart = null;
     let lastTap = 0;
-    function zoomImg() { return document.getElementById('mushafPageImg'); }
+    function zoomImg() { return document.querySelector('#mushafImgContainer .page-zoom'); }
     function applyZoom() {
       const img = zoomImg();
       if (!img) return;
@@ -3189,6 +3519,11 @@
       updateAudioUI();
       refreshOfflineUI();
     });
+    document.getElementById('warshStyleSelect').addEventListener('change', (e) => {
+      state.warshStyle = e.target.value;
+      saveState();
+      refreshOfflineUI();
+    });
     document.getElementById('autoBackupToggle').addEventListener('change', (e) => {
       state.autoBackup = e.target.checked;
       saveState();
@@ -3270,10 +3605,18 @@
     });
 
     // New Features Event Listeners (Audio, Self-Test, Paper Themes, Rep Counter, Yesterday Link, Milestone)
-    document.getElementById('audioPlayPauseBtn').addEventListener('click', () => {
-      if (audioPlaying) stopAudio();
-      else startWirdAudio();
-    });
+    // one behaviour everywhere: pause / resume while a recitation is loaded, start otherwise
+    function toggleRecitation() {
+      if (NATIVE_AUDIO && nativeAudio.active) { try { window.AndroidBridge.audioToggle(); } catch (e) {} return; }
+      if (!NATIVE_AUDIO && audioPlaying) {
+        if (audioEl.paused) audioEl.play().catch(() => {}); else audioEl.pause();
+        setTimeout(updateAudioUI, 50);
+        return;
+      }
+      startWirdAudio();
+    }
+    document.getElementById('audioPlayPauseBtn').addEventListener('click', toggleRecitation);
+    document.getElementById('audioStopBtn').addEventListener('click', () => { stopAudio(); lastFollowKey = ''; applyAyahHighlight(); });
     document.getElementById('audioPlayPauseBtn').addEventListener('contextmenu', (e) => e.preventDefault());
 
     document.getElementById('rangeRepeatBtn').addEventListener('click', () => {

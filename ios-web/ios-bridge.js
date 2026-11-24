@@ -100,6 +100,21 @@
 
   function dbg(msg) { try { QN.debugLog({ msg: String(msg) }); } catch (e) {} }
   window.addEventListener('error', (e) => dbg('JS error: ' + e.message + ' @' + e.lineno));
+  // The page's own state loads asynchronously on iOS; retry until the app is ready to open the mushaf.
+  function runShortcut(value, tries) {
+    tries = tries || 0;
+    whenLoaded(() => {
+      const ready = typeof window.openFromShortcut === 'function' && document.getElementById('mushafModal');
+      if (!ready) { if (tries < 40) setTimeout(() => runShortcut(value, tries + 1), 250); return; }
+      setTimeout(() => {
+        try { window.openFromShortcut(value); } catch (e) { dbg('openFromShortcut error ' + e); }
+        if (value === 'mushaf') setTimeout(() => {
+          const m = document.getElementById('mushafModal');
+          if (m && m.classList.contains('hidden') && tries < 40) runShortcut(value, tries + 1);
+        }, 1200);
+      }, 400);
+    });
+  }
   function whenLoaded(fn) {
     if (document.readyState === 'complete') fn(); else window.addEventListener('load', fn, { once: true });
   }
@@ -109,14 +124,8 @@
       if (IOS.pendingDone) whenLoaded(() => { if (typeof window.onNativeResume === 'function') window.onNativeResume(); });
     }).catch(() => {});
     QN.getPendingShortcut().then((r) => {
-      dbg('pendingShortcut=' + JSON.stringify(r) + ' ready=' + document.readyState);
-      if (r && r.value) whenLoaded(() => setTimeout(() => {
-        dbg('openFromShortcut type=' + typeof window.openFromShortcut);
-        try { if (typeof window.openFromShortcut === 'function') window.openFromShortcut(r.value); }
-        catch (e) { dbg('openFromShortcut error ' + e); }
-        setTimeout(() => dbg('mushaf hidden=' + document.getElementById('mushafModal').classList.contains('hidden')), 3000);
-      }, 300));
-    }).catch((e) => dbg('getPendingShortcut failed ' + e));
+      if (r && r.value) runShortcut(r.value);
+    }).catch(() => {});
     QN.audioState().then((s) => {
       if (s && s.active) whenLoaded(() => { if (typeof window.onNativeAudio === 'function') window.onNativeAudio(s); });
     }).catch(() => {});
@@ -197,6 +206,9 @@
         const arr = d[Number(surah) - 1] || [];
         return JSON.stringify(arr.map((t, i) => ({ verse: i + 1, text: t })));
       } catch (e) { return ''; }
+    },
+    getPageMap() {
+      try { return JSON.stringify(loadJSON('ayah-pages.json')); } catch (e) { return ''; }
     },
     getAyahPage(surah, ayah) {
       try { const p = loadJSON('ayah-pages.json'); return (p[Number(surah) - 1] && p[Number(surah) - 1][Number(ayah) - 1]) || 0; } catch (e) { return 0; }

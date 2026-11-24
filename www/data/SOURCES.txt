@@ -2,3 +2,4 @@ quran-hafs.json  : Uthmani text (Hafs) from Tanzil Project (tanzil.net) via api.
 quran-warsh.json : Warsh text from fawazahmed0/quran-api (edition ara-quranwarsh), verbatim.
 ayah-pages.json  : Madinah Mushaf page number of each ayah, from api.alquran.cloud.
 Format: array of 114 surahs, each an array of ayahs in order (ayah 1 first).
+Note: in quran-warsh.json, a final ي is written ى (alef maksura) wherever the same word ends in ى in the Hafs text of the same verse (3269 words), so the Warsh text reads naturally in eastern (mashriqi) script.
