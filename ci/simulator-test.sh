@@ -32,12 +32,12 @@ xcrun simctl terminate "$UDID" "$BUNDLE"
 
 # 2) a user in the middle of the plan (state preloaded by the test hook)
 xcrun simctl uninstall "$UDID" "$BUNDLE"; xcrun simctl install "$UDID" "$APP"
-xcrun simctl spawn "$UDID" defaults write "$BUNDLE" ui_test_state "$(cat ci/test-state.json)"
+xcrun simctl spawn "$UDID" defaults write "$BUNDLE" ui_test_state -string "$(cat ci/test-state.json)"
 xcrun simctl launch "$UDID" "$BUNDLE"; sleep 12; shot 02-home
 xcrun simctl terminate "$UDID" "$BUNDLE"
 
 # 3) mushaf opened directly (same path as the home-screen quick action)
-xcrun simctl spawn "$UDID" defaults write "$BUNDLE" pending_shortcut mushaf
+xcrun simctl spawn "$UDID" defaults write "$BUNDLE" pending_shortcut -string mushaf
 xcrun simctl launch "$UDID" "$BUNDLE"; sleep 15; shot 03-mushaf
 xcrun simctl terminate "$UDID" "$BUNDLE"
 
