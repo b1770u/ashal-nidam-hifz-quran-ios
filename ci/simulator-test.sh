@@ -27,20 +27,27 @@ xcrun simctl install "$UDID" "$APP"
 shot() { xcrun simctl io "$UDID" screenshot "$OUT/$1.png" && echo "shot $1"; }
 
 # 1) first launch: welcome screen
-xcrun simctl launch "$UDID" "$BUNDLE"; sleep 12; shot 01-first-launch
+xcrun simctl launch "$UDID" "$BUNDLE"; sleep 10; shot 01-first-launch
 xcrun simctl terminate "$UDID" "$BUNDLE"
 
 # 2) a user in the middle of the plan (state preloaded by the test hook)
 xcrun simctl uninstall "$UDID" "$BUNDLE"; xcrun simctl install "$UDID" "$APP"
 xcrun simctl spawn "$UDID" defaults write "$BUNDLE" ui_test_state -string "$(cat ci/test-state.json)"
-xcrun simctl launch "$UDID" "$BUNDLE"; sleep 12; shot 02-home
+xcrun simctl launch "$UDID" "$BUNDLE"; sleep 10; shot 02-home
 xcrun simctl terminate "$UDID" "$BUNDLE"
 
-# 3) mushaf opened directly (same path as the home-screen quick action)
+# 3) mushaf opened from the home-screen quick action path
 xcrun simctl spawn "$UDID" defaults write "$BUNDLE" pending_shortcut -string mushaf
-xcrun simctl launch "$UDID" "$BUNDLE"; sleep 15; shot 03-mushaf
-xcrun simctl spawn "$UDID" log show --last 2m --style compact --predicate 'eventMessage CONTAINS[c] "QuranDBG"' 2>/dev/null | tail -20 || true
+xcrun simctl launch "$UDID" "$BUNDLE"; sleep 15; shot 03-shortcut-mushaf
 xcrun simctl terminate "$UDID" "$BUNDLE"
+
+# 4) fixed screens opened by the test hook
+for act in mushaf hafs tafsir dark-tafsir; do
+  xcrun simctl spawn "$UDID" defaults write "$BUNDLE" ui_test_action -string "$act"
+  xcrun simctl launch "$UDID" "$BUNDLE"; sleep 14; shot "04-$act"
+  xcrun simctl terminate "$UDID" "$BUNDLE"
+done
+xcrun simctl spawn "$UDID" defaults delete "$BUNDLE" ui_test_action || true
 
 # crash check
 if xcrun simctl spawn "$UDID" log show --last 5m --predicate "process == 'App' AND eventMessage CONTAINS[c] 'fatal'" 2>/dev/null | grep -qi fatal; then

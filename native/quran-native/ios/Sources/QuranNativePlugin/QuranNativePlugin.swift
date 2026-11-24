@@ -29,6 +29,18 @@ public class QuranNativePlugin: CAPPlugin, CAPBridgedPlugin {
             bridge?.webView?.configuration.userContentController.addUserScript(
                 WKUserScript(source: js, injectionTime: .atDocumentStart, forMainFrameOnly: true))
         }
+        // Automated simulator tests only: open a fixed screen after start (no arbitrary code)
+        let actions = [
+            "mushaf": "openMushafForDay(state.currentTable, state.currentDay)",
+            "tafsir": "openMushafForDay(state.currentTable, state.currentDay); setTimeout(function(){ openTafsir(); }, 2500)",
+            "dark-tafsir": "state.darkMode = true; state.mushafPaper = 'cream'; applyTheme(); openMushafForDay(state.currentTable, state.currentDay); setTimeout(function(){ openTafsir(); }, 2500)",
+            "hafs": "state.riwayah = 'hafs'; applyTheme(); openMushafForDay(state.currentTable, state.currentDay)",
+        ]
+        if let key = UserDefaults.standard.string(forKey: "ui_test_action"), let js = actions[key] {
+            bridge?.webView?.configuration.userContentController.addUserScript(WKUserScript(
+                source: "window.addEventListener('load', function(){ setTimeout(function(){ try { \(js) } catch (e) {} }, 3000); });",
+                injectionTime: .atDocumentEnd, forMainFrameOnly: true))
+        }
         Reminders.shared.setup()
         AudioEngine.shared.onState = { [weak self] s in self?.notifyListeners("audio", data: s) }
         OfflineStore.shared.onProgress = { [weak self] p in self?.notifyListeners("offline", data: p) }

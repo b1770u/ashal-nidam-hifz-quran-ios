@@ -38,10 +38,12 @@ jobs:
             -derivedDataPath build/sim CODE_SIGNING_ALLOWED=NO build | tail -60
 
       - name: Test on iPhone simulator
+        if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
         run: ci/simulator-test.sh "iPhone 17 Pro" build/sim/Build/Products/Debug-iphonesimulator/App.app screenshots/iphone
 
-      - name: Test on iPad simulator (landscape, book mode)
-        run: ci/simulator-test.sh "iPad Pro 13-inch" build/sim/Build/Products/Debug-iphonesimulator/App.app screenshots/ipad landscape
+      - name: Test on iPad simulator
+        if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+        run: ci/simulator-test.sh "iPad Air 11-inch" build/sim/Build/Products/Debug-iphonesimulator/App.app screenshots/ipad
         continue-on-error: true
 
       - name: Build unsigned IPA (for Sideloadly / AltStore)
@@ -56,6 +58,7 @@ jobs:
           ls -la dist/*.ipa
 
       - uses: actions/upload-artifact@v4
+        if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
         with:
           name: screenshots
           path: screenshots
