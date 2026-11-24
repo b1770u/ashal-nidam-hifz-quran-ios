@@ -2450,17 +2450,11 @@
         contentEl.innerHTML = `<div class="text-center py-10 px-4 font-sans space-y-3">
             <p class="text-sm font-bold">تعذّر تحميل التفسير</p>
             <p class="text-xs" style="color: var(--text-muted);">تحقق من اتصالك بالإنترنت، أو حمّل التفسير مسبقاً من الإعدادات ← الاستعمال بدون إنترنت.</p>
-            <button type="button" data-tafsir-back class="px-4 py-2 rounded-xl text-xs font-bold text-white" style="background-color: var(--emerald);">العودة إلى المصحف</button>
           </div>`;
         return;
       }
       if (book) { renderBook(contentEl, mushafContext.startPage, mushafContext.endPage); applyAyahHighlight(); return; }
       contentEl.innerHTML = `<div style="font-size:${Math.round((state.mushafFontSize || 24) * 0.72)}px;">
-          <div class="flex justify-center pb-1">
-            <button type="button" data-tafsir-back class="px-3 py-1.5 rounded-xl text-xs font-bold soft-surface flex items-center gap-1.5 font-sans">
-              <i data-lucide="book-open" class="w-3.5 h-3.5"></i><span>العودة إلى المصحف</span>
-            </button>
-          </div>
           ${tafsirPageHtml(r)}
         </div>`;
       contentEl.scrollTop = 0;
