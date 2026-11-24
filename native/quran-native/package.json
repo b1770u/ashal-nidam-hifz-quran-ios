@@ -1,0 +1,7 @@
+{
+  "name": "quran-native",
+  "version": "1.0.0",
+  "description": "Native iOS features for أسهل نظام لحفظ القرآن (audio, reminders, offline, speech)",
+  "private": true,
+  "capacitor": { "ios": { "src": "ios" } }
+}

@@ -1,0 +1,45 @@
+#!/bin/bash
+# Boots a simulator, installs the app, and takes screenshots of key screens.
+# usage: ci/simulator-test.sh <device name> <app path> <out dir> [landscape]
+set -u
+DEVICE="$1"; APP="$2"; OUT="$3"; LAND="${4:-}"
+BUNDLE=com.ashalnidamhifz.quran
+mkdir -p "$OUT"
+UDID=$(xcrun simctl list devices available -j | python3 -c "
+import json,sys
+d=json.load(sys.stdin)['devices']
+c=[x['udid'] for rt,l in sorted(d.items(), reverse=True) if 'iOS' in rt for x in l if x['name']==sys.argv[1]]
+print(c[0] if c else '')" "$DEVICE")
+[ -n "$UDID" ] || { echo "no simulator named $DEVICE"; xcrun simctl list devices available; exit 1; }
+xcrun simctl boot "$UDID" || true
+xcrun simctl bootstatus "$UDID" -b
+open -a Simulator --args -CurrentDeviceUDID "$UDID" || true
+sleep 5
+if [ -n "$LAND" ]; then
+  osascript -e 'tell application "Simulator" to activate' -e 'delay 1' \
+    -e 'tell application "System Events" to key code 123 using command down' || echo "rotate failed (non-fatal)"
+  sleep 3
+fi
+xcrun simctl install "$UDID" "$APP"
+shot() { xcrun simctl io "$UDID" screenshot "$OUT/$1.png" && echo "shot $1"; }
+
+# 1) first launch: welcome screen
+xcrun simctl launch "$UDID" "$BUNDLE"; sleep 12; shot 01-first-launch
+xcrun simctl terminate "$UDID" "$BUNDLE"
+
+# 2) a user in the middle of the plan (state preloaded by the test hook)
+xcrun simctl uninstall "$UDID" "$BUNDLE"; xcrun simctl install "$UDID" "$APP"
+xcrun simctl spawn "$UDID" defaults write "$BUNDLE" ui_test_state "$(cat ci/test-state.json)"
+xcrun simctl launch "$UDID" "$BUNDLE"; sleep 12; shot 02-home
+xcrun simctl terminate "$UDID" "$BUNDLE"
+
+# 3) mushaf opened directly (same path as the home-screen quick action)
+xcrun simctl spawn "$UDID" defaults write "$BUNDLE" pending_shortcut mushaf
+xcrun simctl launch "$UDID" "$BUNDLE"; sleep 15; shot 03-mushaf
+xcrun simctl terminate "$UDID" "$BUNDLE"
+
+# crash check
+if xcrun simctl spawn "$UDID" log show --last 5m --predicate "process == 'App' AND eventMessage CONTAINS[c] 'fatal'" 2>/dev/null | grep -qi fatal; then
+  echo "::warning::fatal messages found in the app log"
+fi
+ls -la "$OUT"

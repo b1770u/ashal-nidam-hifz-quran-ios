@@ -1,0 +1,12 @@
+{
+  "appId": "com.ashalnidamhifz.quran",
+  "appName": "أسهل نظام لحفظ القرآن",
+  "webDir": "www",
+  "backgroundColor": "#FAF8F3",
+  "ios": {
+    "contentInset": "always",
+    "backgroundColor": "#FAF8F3",
+    "allowsLinkPreview": false,
+    "scrollEnabled": true
+  }
+}

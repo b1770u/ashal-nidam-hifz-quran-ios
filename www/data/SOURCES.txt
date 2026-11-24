@@ -1,0 +1,4 @@
+quran-hafs.json  : Uthmani text (Hafs) from Tanzil Project (tanzil.net) via api.alquran.cloud, verbatim. Tanzil license: copies allowed without modification, with source attribution.
+quran-warsh.json : Warsh text from fawazahmed0/quran-api (edition ara-quranwarsh), verbatim.
+ayah-pages.json  : Madinah Mushaf page number of each ayah, from api.alquran.cloud.
+Format: array of 114 surahs, each an array of ayahs in order (ayah 1 first).

@@ -1,0 +1,74 @@
+name: iOS build
+
+on:
+  push:
+    branches: [ "main" ]
+    tags: [ "v*" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install and sync Capacitor
+        run: |
+          npm ci
+          npx cap sync ios
+
+      - name: Select Xcode
+        run: |
+          sudo xcode-select -s "$(ls -d /Applications/Xcode_16*.app | sort -V | tail -1)"
+          xcodebuild -version
+
+      - name: Build for simulator
+        run: |
+          set -o pipefail
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build/sim CODE_SIGNING_ALLOWED=NO build | tail -60
+
+      - name: Test on iPhone simulator
+        run: ci/simulator-test.sh "iPhone 16" build/sim/Build/Products/Debug-iphonesimulator/App.app screenshots/iphone
+
+      - name: Test on iPad simulator (landscape, book mode)
+        run: ci/simulator-test.sh "iPad Pro 13-inch (M4)" build/sim/Build/Products/Debug-iphonesimulator/App.app screenshots/ipad landscape
+        continue-on-error: true
+
+      - name: Build unsigned IPA (for Sideloadly / AltStore)
+        run: |
+          set -o pipefail
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build/dev \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build | tail -40
+          mkdir -p dist/Payload
+          cp -R build/dev/Build/Products/Release-iphoneos/App.app dist/Payload/
+          (cd dist && zip -qry ashal-nidam-hifz-quran.ipa Payload)
+          ls -la dist/*.ipa
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: screenshots
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ipa
+          path: dist/ashal-nidam-hifz-quran.ipa
+
+      - name: Publish release (tags only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "dist/ashal-nidam-hifz-quran.ipa#أسهل-نظام-لحفظ-القرآن.ipa" \
+            --title "أسهل نظام لحفظ القرآن $GITHUB_REF_NAME (iPhone / iPad)" --notes-file RELEASE_NOTES.md --latest
