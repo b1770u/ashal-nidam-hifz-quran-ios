@@ -207,6 +207,9 @@
         return JSON.stringify(arr.map((t, i) => ({ verse: i + 1, text: t })));
       } catch (e) { return ''; }
     },
+    getDivisions() {
+      try { return JSON.stringify(loadJSON('divisions.json')); } catch (e) { return ''; }
+    },
     getPageMap() {
       try { return JSON.stringify(loadJSON('ayah-pages.json')); } catch (e) { return ''; }
     },
