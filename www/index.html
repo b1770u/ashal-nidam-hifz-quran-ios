@@ -294,7 +294,7 @@
 <body class="min-h-screen pb-24 antialiased">
 
   <!-- Toast Banner -->
-  <div id="toastBanner" class="hidden fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-md rounded-2xl shadow-xl card-surface p-3.5 animate-toast">
+  <div id="toastBanner" style="z-index:70" class="hidden fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-md rounded-2xl shadow-xl card-surface p-3.5 animate-toast">
     <div class="flex items-start gap-3">
       <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style="background: var(--emerald-soft); color: var(--emerald);">
         <i data-lucide="bell-ring" class="w-4 h-4"></i>
@@ -566,7 +566,7 @@
           <h3 id="mushafTitle" class="text-sm sm:text-base font-extrabold truncate">سورة البقرة</h3>
           <p id="mushafSubtitle" class="text-[11px] truncate" style="color: var(--text-muted);">من الآية 1 إلى 20</p>
         </div>
-        <button id="toggleMushafToolbarBtn" type="button" class="w-9 h-9 rounded-xl soft-surface flex items-center justify-center shrink-0 hover:opacity-85 transition" title="إخفاء أو إظهار شريط الأدوات" aria-label="تبديل الأدوات">
+        <button id="toggleMushafToolbarBtn" type="button" class="w-9 h-9 rounded-xl soft-surface flex items-center justify-center shrink-0 hover:opacity-85 transition" title="الإعدادات" aria-label="الإعدادات">
           <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
         </button>
       </div>
@@ -3493,32 +3493,38 @@
     };
     document.getElementById('closeMushafBtn').addEventListener('click', closeMushaf);
     document.getElementById('mushafCloseFooterBtn').addEventListener('click', closeMushaf);
-    document.getElementById('toggleMushafToolbarBtn').addEventListener('click', () => hideMushafPanels());
+    document.getElementById('toggleMushafToolbarBtn').addEventListener('click', () => { hideMushafPanels(); openSettings(); });
 
-    // --- Tools panels: hidden by default, pulled down from the slim handle, auto-hide after 4 s ---
+    // --- Tools panels: hidden by default, pulled down from the slim handle, auto-hide after 8 s ---
     const mushafShell = document.getElementById('mushafShell');
-    let mushafPanelTimer = null;
+    let mushafPanelTimer = null, panelsHiddenAt = 0;
+    const PANEL_AUTO_HIDE_MS = 8000;
     function showMushafPanels() {
       mushafShell.classList.remove('panels-hidden');
       clearTimeout(mushafPanelTimer);
-      mushafPanelTimer = setTimeout(hideMushafPanels, 4000);
+      mushafPanelTimer = setTimeout(hideMushafPanels, PANEL_AUTO_HIDE_MS);
     }
     function hideMushafPanels() {
       clearTimeout(mushafPanelTimer);
+      if (!mushafShell.classList.contains('panels-hidden')) panelsHiddenAt = Date.now();
       mushafShell.classList.add('panels-hidden');
     }
+    // a tap meant for the tools bar while it slides away must not land on the buttons under it
+    mushafShell.addEventListener('click', (e) => {
+      if (Date.now() - panelsHiddenAt < 600 && e.target.closest('#mushafHandle')) { e.stopPropagation(); e.preventDefault(); }
+    }, true);
     function toggleMushafPanels() {
       if (mushafShell.classList.contains('panels-hidden')) showMushafPanels(); else hideMushafPanels();
     }
     document.getElementById('mushafHandleBtn').addEventListener('click', toggleMushafPanels);
     document.getElementById('mushafHandleAudioBtn').addEventListener('click', () => toggleRecitation());
-    // any touch inside a panel keeps it open for another 4 s
+    // any touch inside a panel keeps it open for another 8 s
     ['mushafTopPanel', 'mushafBottomPanel'].forEach(id => {
       const el = document.getElementById(id);
       ['touchstart', 'mousedown', 'click', 'change'].forEach(ev => el.addEventListener(ev, () => {
         if (!mushafShell.classList.contains('panels-hidden')) {
           clearTimeout(mushafPanelTimer);
-          mushafPanelTimer = setTimeout(hideMushafPanels, 4000);
+          mushafPanelTimer = setTimeout(hideMushafPanels, PANEL_AUTO_HIDE_MS);
         }
       }, { passive: true }));
     });
@@ -3877,6 +3883,8 @@
       applyTheme();
       settingsModal.classList.add('hidden');
       switchTab(activeTab);
+      // settings opened from inside the mushaf: show the change there right away (riwayah, script…)
+      if (!mushafModal.classList.contains('hidden')) renderMushafModal();
       showToast('تم حفظ الإعدادات', `رواية ${state.riwayah === 'warsh' ? 'ورش' : 'حفص'} • الجدول ${state.currentTable} اليوم ${state.currentDay}`);
     });
 
