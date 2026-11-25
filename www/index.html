@@ -248,15 +248,16 @@
     .text-page .tp-basmala { display: block; text-align: center; margin-bottom: 0.05em; }
     .text-page .tp-num { font-family: 'Amiri Quran', 'Amiri', serif; white-space: nowrap; margin: 0 0.1em; }
     /* Hizb / quarter / eighth marks in the page margin, like the printed mushaf */
-    .hizb-rail { position: absolute; top: 0; pointer-events: none; z-index: 6; }
-    .hizb-mark { position: absolute; left: 50%; transform: translate(-50%, -50%); filter: drop-shadow(0 1px 1.5px rgba(0,0,0,0.18)); }
-    .hizb-mark .rs-star { fill: var(--book-paper, #FCF7E8); stroke: #C59B43; }
-    .hizb-mark text { fill: #0F5C4A; font-family: 'Tajawal', sans-serif; font-weight: 800; }
-    .mushaf-theme-white .hizb-mark .rs-star { fill: #FFFFFF; }
-    .mushaf-theme-cream .hizb-mark .rs-star { fill: #FCF7E8; }
-    .mushaf-theme-dark .hizb-mark .rs-star { fill: #121B18; }
-    .mushaf-theme-dark .hizb-mark text { fill: #9FD9C5; }
-    .text-page .tp-rub { color: #C59B43; margin: 0 0.15em; }
+    .hizb-layer { position: absolute; inset: 0; pointer-events: none; z-index: 6; }
+    .hizb-mark { position: absolute; transform: translate(-50%, -50%); }
+    .hizb-inline { display: inline-block; vertical-align: middle; margin: 0 0.08em; position: relative; top: -0.08em; }
+    :is(.hizb-mark,.hizb-inline) .rs-star { fill: var(--book-paper, #FCF7E8); stroke: #C59B43; }
+    :is(.hizb-mark,.hizb-inline) text { fill: #0F5C4A; font-family: 'Tajawal', sans-serif; font-weight: 800; }
+    .mushaf-theme-white :is(.hizb-mark,.hizb-inline) .rs-star { fill: #FFFFFF; }
+    .mushaf-theme-cream :is(.hizb-mark,.hizb-inline) .rs-star { fill: #FCF7E8; }
+    .mushaf-theme-dark :is(.hizb-mark,.hizb-inline) .rs-star { fill: #121B18; }
+    .mushaf-theme-dark :is(.hizb-mark,.hizb-inline) text { fill: #9FD9C5; }
+    .tp-body .nowrap { white-space: nowrap; }
     /* Tafsir */
     .tafsir-page { direction: rtl; font-family: 'Tajawal', sans-serif; }
     .tafsir-page .tf-head { text-align: center; font-weight: 800; font-size: 0.85em; color: var(--emerald); padding: 0.4em 0 0.6em; }
@@ -2267,13 +2268,7 @@
         ov.setAttribute('viewBox', meta.vb);
         ov.setAttribute('preserveAspectRatio', 'none');
         ov.innerHTML = meta.polys.map(p => `<path data-ayah="${p.s}:${p.a}" d="${p.d}"/>`).join('');
-        const host = art.closest('#mushafImgContainer, .book-page');
-        const rail = host && host.querySelector(`.hizb-rail[data-page="${page}"]`);
-        if (rail) {
-          // y relative to the rail: page-art top inside its host
-          const top = art.getBoundingClientRect().top - rail.getBoundingClientRect().top;
-          railForPrinted(rail, page, meta, top, art.getBoundingClientRect().height, Number(rail.dataset.size) || 28);
-        }
+        placeHizbMarks(art.querySelector('.hizb-layer'), page, meta, art.offsetWidth, art.offsetHeight);
         applyAyahHighlight();
       });
     }
@@ -2299,7 +2294,7 @@
         for (const m of src.marks) {
           const o = k === 'warshEasy'
             ? { page: m[0], line: null, s: m[1], a: m[2], hizb: m[3], part: m[4], unit: 8 }
-            : { page: m[0], line: m[1], s: m[2], a: m[3], hizb: m[4], part: m[5], unit: src.unit };
+            : { page: m[0], line: m[1], s: m[2], a: m[3], hizb: m[4], part: m[5], unit: src.unit, x: m[6], y: m[7] };
           (src._byPage[o.page] = src._byPage[o.page] || []).push(o);
           src._byAyah[`${o.s}:${o.a}`] = o;
         }
@@ -2341,64 +2336,55 @@
       const text = t.length > 1
         ? `<text x="20" y="18.2" font-size="7" text-anchor="middle">${t[0]}</text><text x="20" y="26.6" font-size="7.6" text-anchor="middle">${t[1]}</text>`
         : `<text x="20" y="23" font-size="${t[0].length > 3 ? 7 : 8.4}" text-anchor="middle">${t[0]}</text>`;
-      return `<svg class="hizb-mark" width="${size}" height="${size}" viewBox="0 0 40 40" style="top:{Y}px">
+      return `<svg class="hizb-mark" width="${size}" height="${size}" viewBox="0 0 40 40" style="{POS}">
           <g class="rs-star" stroke-width="1.5"><rect x="7" y="7" width="26" height="26" rx="2.5"/><rect x="7" y="7" width="26" height="26" rx="2.5" transform="rotate(45 20 20)"/></g>
           <circle cx="20" cy="20" r="12" fill="none" stroke="#C59B43" stroke-width="0.8"/>${text}</svg>`;
     }
-    /** Fills the rail next to a page with the division marks; yOf(mark) returns the y in px (or null). */
-    function fillRail(rail, page, size, yOf) {
-      if (!rail) return;
-      const html = [];
-      let lastY = -999;
-      for (const m of pageMarks(page)) {
-        let y = yOf(m);
-        if (y == null || isNaN(y)) continue;
-        if (y - lastY < size * 0.9) y = lastY + size * 0.9;    // two marks on neighbouring lines: keep both readable
-        lastY = y;
-        html.push(rosetteSvg(m, size).replace('{Y}', y.toFixed(1)));
-      }
-      rail.innerHTML = html.join('');
-    }
-    /** Text-line bands of a printed page, from the ayah polygons (viewBox units, top to bottom). */
-    function polyBands(meta) {
-      const rects = [];
-      for (const p of meta.polys) {
-        for (const sub of p.d.split('Z')) {
-          const ys = [...sub.matchAll(/(-?[\d.]+)\s+(-?[\d.]+)/g)].map(x => Number(x[2]));
-          if (ys.length >= 2) rects.push([Math.min(...ys), Math.max(...ys)]);
-        }
-      }
-      rects.sort((a, b) => a[0] - b[0]);
-      const bands = [];
-      for (const [y0, y1] of rects) {
-        const last = bands[bands.length - 1];
-        if (last && y0 < last[0] + (last[1] - last[0]) * 0.5) { last[1] = Math.max(last[1], y1); continue; }
-        if (y1 - y0 > 4) bands.push([y0, y1]);
-      }
-      return bands;
-    }
-    function railForPrinted(rail, page, meta, artTop, artH, size) {
+    /** Puts the division marks on a printed page, in the line, where the mushaf prints its ۞ (covering it). */
+    const LS_X = [328.5, 325];   // where the ۞ sits when an ayah opens a line [Hafs, Warsh], page units
+    function placeHizbMarks(layer, page, meta, artW, artH) {
+      if (!layer) return;
       const vb = meta.vb.split(/\s+/).map(Number);
-      const toPx = (y) => artTop + (y - vb[1]) / vb[3] * artH;
+      const sx = artW / vb[2], sy = artH / vb[3];
       const lineH = vb[3] / 15;                       // 15 lines on a Madinah page
-      fillRail(rail, page, size, (m) => {
-        // the division starts on the first line of its ayah
-        const poly = meta.polys.find(p => p.s === m.s && p.a === m.a);
-        if (!poly) return null;
-        const ys = [...poly.d.matchAll(/(-?[\d.]+)\s+(-?[\d.]+)/g)].map(x => Number(x[2]));
-        const top = Math.min(...ys);
-        return toPx(top + Math.min(lineH, Math.max(...ys) - top) / 2);
-      });
+      // the real height of one line on this page: the usual height of the one-line ayah boxes
+      const hs = [];
+      for (const p of meta.polys) for (const r of p.d.split('Z')) {
+        const ys = [...r.matchAll(/(-?[\d.]+)\s+(-?[\d.]+)/g)].map(x => Number(x[2]));
+        if (ys.length) { const d = Math.max(...ys) - Math.min(...ys); if (d > lineH * 0.6 && d < lineH * 1.3) hs.push(d); }
+      }
+      hs.sort((a, b) => a - b);
+      const pitch = hs.length ? hs[hs.length >> 1] : lineH;
+      const html = [];
+      const W = state.riwayah === 'warsh';
+      const size = Math.max(14, pitch * (W ? 0.46 : 0.48) * sy);   // covers the ۞, stays clear of the ayah number and the next word
+      for (const m of pageMarks(page)) {
+        let x = m.x, y = m.y;   // measured centre of the ۞ printed on this page (divisions.json)
+        if (x == null) {
+          // no ۞ printed (a sūrah opens here) or no measurement: work it out from the ayah's box
+          const poly = meta.polys.find(p => p.s === m.s && p.a === m.a);
+          if (!poly) continue;
+          const pts = [...poly.d.split('Z')[0].matchAll(/(-?[\d.]+)\s+(-?[\d.]+)/g)].map(q => [Number(q[1]), Number(q[2])]);
+          if (!pts.length) continue;
+          const top = Math.min(...pts.map(q => q[1])), bottom = Math.max(...pts.map(q => q[1]));
+          const right = Math.max(...pts.map(q => q[0]));
+          if (m.a === 1) {
+            // at the end of the sūrah title line
+            x = vb[0] + vb[2] - lineH * 0.55; y = Math.max(vb[1] + lineH * 0.5, top - lineH * 1.5);
+          } else {
+            const nLines = Math.max(1, Math.round((bottom - top) / pitch));
+            x = right > vb[0] + vb[2] * 0.94 ? LS_X[W ? 1 : 0] : right - pitch * (W ? 0.1 : 0.135);
+            y = bottom - (nLines - 1) * pitch - pitch * (W ? 0.45 : 0.47);
+          }
+        }
+        const px = (x - vb[0]) * sx, py = (y - vb[1]) * sy;
+        html.push(rosetteSvg(m, size).replace('{POS}', `left:${px.toFixed(1)}px;top:${py.toFixed(1)}px`));
+      }
+      layer.innerHTML = html.join('');
     }
-    function railForText(rail, page, textPage, offsetTop, size) {
-      if (!textPage) return;
-      const base = textPage.getBoundingClientRect().top;
-      fillRail(rail, page, size, (m) => {
-        const el = textPage.querySelector(`[data-ayah-span="${m.s}:${m.a}"]`);
-        if (!el) return null;
-        const r = el.getClientRects()[0] || el.getBoundingClientRect();
-        return offsetTop + (r.top - base) + r.height / 2;
-      });
+    /** Inline mark for the Warsh easy pages (replaces the ۞). */
+    function inlineRosette(m) {
+      return rosetteSvg(m, 20).replace('class="hizb-mark"', 'class="hizb-inline"').replace('width="20" height="20"', 'width="1.25em" height="1.25em"').replace(' style="{POS}"', '');
     }
 
     // ---- Warsh easy pages (text laid out like a printed page, font size fitted to the page) ----
@@ -2417,8 +2403,11 @@
         }
         lastSurah = su;
         const dm = markAtAyah(su, ay);
-        const rub = dm && dm.page === page && !(su === 1 && ay === 1) && ay !== 1 ? '<span class="tp-rub">۞</span>' : '';
-        html += `${rub}<span data-ayah-span="${su}:${ay}">${v.text}</span><span class="tp-num">۝${toArabicDigits(ay)}</span> `;
+        const rub = dm && dm.page === page && !(su === 1 && ay === 1) ? inlineRosette(dm) : '';
+        // the mark replaces the printed ۞ and stays on the same line as the ayah's first word
+        let txt = String(v.text).replace(/\s*\u06DE\s*/g, ' ').trim();
+        if (rub) { const sp = txt.indexOf(' '); const w1 = sp < 0 ? txt : txt.slice(0, sp); txt = `<span class="nowrap">${rub}${w1}</span>${sp < 0 ? '' : txt.slice(sp)}`; }
+        html += `<span data-ayah-span="${su}:${ay}">${txt}</span><span class="tp-num">۝${toArabicDigits(ay)}</span> `;
       }
       return html;
     }
@@ -2683,7 +2672,7 @@
       const availH = Math.max(260, contentEl.clientHeight - 40);
       const availW = Math.max(400, contentEl.clientWidth - 28);
       const pageW = Math.floor(Math.min(availW / 2, (availH - 18) / (0.91 * BOOK_RATIO + 0.09)));
-      const pad = Math.round(pageW * 0.065);       // room in the outer margin for the hizb marks
+      const pad = Math.round(pageW * 0.045);
       const innerW = pageW - 2 * pad;
       const innerH = Math.round(innerW * BOOK_RATIO);
       const pageH = innerH + 2 * pad + 18;
@@ -2697,30 +2686,22 @@
       }
       if (usesTextPages()) {
         const fs = fitTextPage(p, g.innerW, g.innerH);
-        return `${bookRailHtml(p, g)}<div class="tp-box" style="position:absolute;left:${g.pad}px;top:${g.pad}px;width:${g.innerW}px;height:${g.innerH}px;">${textPageHtml(p, fs)}</div>
+        return `<div class="tp-box" style="position:absolute;left:${g.pad}px;top:${g.pad}px;width:${g.innerW}px;height:${g.innerH}px;">${textPageHtml(p, fs)}</div>
                 <div class="book-num">${toArabicDigits(p)}</div>
                 <div class="book-under-shade"></div>`;
       }
       const url = getMushafPageSvgUrl(p, state.riwayah);
-      return `${bookRailHtml(p, g)}<div class="page-art" data-page="${p}" style="left:${g.pad}px;top:${g.pad}px;width:${g.innerW}px;height:${g.innerH}px;right:auto;bottom:auto;">
+      return `<div class="page-art" data-page="${p}" style="left:${g.pad}px;top:${g.pad}px;width:${g.innerW}px;height:${g.innerH}px;right:auto;bottom:auto;">
                 <div class="book-img mushaf-svg-img" style="left:0;top:0;width:100%;height:100%;background-image:url('${url}')"></div>
                 <svg class="ayah-overlay" viewBox="0 0 345 550" preserveAspectRatio="none"></svg>
+                <div class="hizb-layer"></div>
               </div>
               <div class="book-num">${toArabicDigits(p)}</div>
               <div class="book-under-shade"></div>`;
     }
-    /** Rail in the outer margin of a book page: right edge of the right (odd) page, left edge of the left page. */
-    function bookRailHtml(p, g) {
-      const outerRight = p % 2 === 1;
-      return `<div class="hizb-rail" data-page="${p}" data-size="${Math.round(g.pad * 0.92)}" style="${outerRight ? 'right' : 'left'}:0;width:${g.pad}px;height:${g.pageH}px;"></div>`;
-    }
     function decorateBookPages(g) {
       document.querySelectorAll('#bookWrap .book-page .page-art').forEach(art => decoratePageArt(art, Number(art.dataset.page), state.riwayah, g.innerW));
-      document.querySelectorAll('#bookWrap .book-page .tp-box').forEach(box => {
-        const page = box.closest('.book-page');
-        const tp = box.querySelector('.text-page');
-        if (page && tp) railForText(page.querySelector('.hizb-rail'), Number(tp.dataset.page), tp, g.pad, Math.round(g.pad * 0.92));
-      });
+
       applyAyahHighlight();
     }
     function preloadPages(pages) {
@@ -2991,12 +2972,12 @@
         const boxH = contentEl.clientHeight - 32;      // inner height of the reading area (py-4)
         const availH = Math.max(240, boxH - 26);
         const availW0 = Math.max(200, contentEl.clientWidth - 24 - 12);
-        const railW = Math.round(Math.min(34, Math.max(24, availW0 * 0.075)));
+        const railW = 0;
         const availW = availW0 - railW;
         const imgH = Math.floor(Math.min(availH, availW * (550 / 345)));
         const imgW = Math.floor(imgH * (345 / 550));
         const outerRight = currentPage % 2 === 1;     // odd pages: margin on the right, like the printed mushaf
-        const railHtml = `<div class="hizb-rail" data-page="${currentPage}" data-size="${railW - 2}" style="${outerRight ? 'right' : 'left'}:0;width:${railW}px;height:${imgH}px;"></div>`;
+        const railHtml = '';
         const artPos = `position:absolute;top:0;bottom:auto;${outerRight ? 'left:0;right:auto' : 'right:0;left:auto'};width:${imgW}px;height:${imgH}px;`;
         if (usesTextPages()) {
           // Warsh, easy reading: same frame, size and page split as the Hafs page; the text is drawn from the bundled Warsh text
@@ -3011,7 +2992,6 @@
                 <div class="text-center pt-1 text-[11px] font-bold font-sans" style="color: var(--text-muted);">${toArabicDigits(currentPage)}</div>
               </div>
             </div>`;
-          railForText(contentEl.querySelector('.hizb-rail'), currentPage, contentEl.querySelector('.text-page'), 0, railW - 2);
           applyAyahHighlight();
           if (window.lucide) lucide.createIcons();
           return;
@@ -3025,6 +3005,7 @@
                   <div class="page-art" data-page="${currentPage}">
                     <div id="mushafPageImg" role="img" aria-label="صفحة المصحف ${currentPage}" class="mushaf-svg-img rounded-lg select-none" style="position:absolute;inset:0;background:url('${svgUrl}') center / 100% 100% no-repeat;"></div>
                     <svg class="ayah-overlay" viewBox="0 0 345 550" preserveAspectRatio="none"></svg>
+                    <div class="hizb-layer"></div>
                   </div>
                 </div>
               </div>
